@@ -33,9 +33,9 @@ if [ ! $(which pre-commit) ]; then
 	echo -e "${RED}We install a bunch of pre-commit.com hooks"
 	echo -e  "to help you produce better code ...\n${NC}"
 	sudo -H pip install pre-commit
-	pre-commit install --install-hooks
+	pre-commit install
 else
-	pre-commit install --install-hooks
+	pre-commit install
 fi
 
 if [ ! $(which hub) ]; then
