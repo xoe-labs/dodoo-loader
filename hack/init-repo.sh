@@ -9,27 +9,32 @@ NC='\033[0m' # No Color
 
 echo -e "${GREEN}Replacing project variables and seeding files ...\n${NC}"
 
+source <(cat hack/variables.ini | hack/ini2env.py)
+
 # Seed Placeholders
-sed -i "s|{{ PROJECT }}|${PROJECT}|" hack/boilerplate.py.txt .travis.yml README.rst setup.py
-sed -i "s|{{ GITHUBORG }}|${GITHUBORG}|" .travis.yml README.rst setup.py
-sed -i "s|{{ COPYRIGHT }}|${COPYRIGHT}|" hack/boilerplate.py.txt
-sed -i "s|{{ AUTHOR }}|${AUTHOR}/" hack/boilerplate.py.txt
-sed -i "s|{{ PACKAGE_AUTHOR }}|${PACKAGE_AUTHOR}/" setup.py
-sed -i "s|{{ PACKAGE_AUTHOR_EMAIL }}|${PACKAGE_AUTHOR_EMAIL}/" setup.py
-sed -i "s|{{ PYPIUSER }}|${PYPIUSER}|" .travis.yml
-sed -i "s|{{ PYPITOKEN }}|${PYPITOKEN}|" .travis.yml
+sed -i "s|{{ PROJECT }}|${project}|g" hack/boilerplate.py.txt .travis.yml README.rst setup.py
+sed -i "s|{{ GITHUBORG }}|${githuborg}|g" .travis.yml README.rst setup.py
+sed -i "s|{{ COPYRIGHT }}|${copyright}|g" hack/boilerplate.py.txt
+sed -i "s|{{ AUTHOR }}|${author}|g" hack/boilerplate.py.txt
+sed -i "s|{{ PACKAGE_AUTHOR }}|${package_author}|g" setup.py
+sed -i "s|{{ PACKAGE_AUTHOR_EMAIL }}|${package_author_email}|g" setup.py
+sed -i "s|{{ PYPI_USER }}|${pypi_user}|g" .travis.yml
+sed -i "s|{{ PYPI_TOKEN }}|${pypi_token}|g" .travis.yml
 
 
-cat boilerplate.readme.credits.txt >> README.rst
-cat boilerplate.py.txt >> "src/${PROJECT}.py"
-cat boilerplate.py.txt >> "test/test_${PROJECT}.py"
-mkdir -p "test/data/test_${PROJECT}"
-touch "test/data/test_${PROJECT}/.gitkeep"
-
-echo -e "${RED}We install a bunch of pre-commit.com hooks"
-echo -e  "to help you produce better code ...\n${NC}"
-pip install pre-commit
-pre-commit install
+cat hack/boilerplate.readme.credits.txt >> README.rst
+cat hack/boilerplate.py.txt >> "src/${project}.py"
+cat hack/boilerplate.py.txt >> "tests/test_${project}.py"
+mkdir -p "tests/data/test_${project}"
+touch "tests/data/test_${project}/.gitkeep"
+if [ ! $(which pre-commit) ]; then
+	echo -e "${RED}We install a bunch of pre-commit.com hooks"
+	echo -e  "to help you produce better code ...\n${NC}"
+	sudo -H pip install pre-commit
+	pre-commit install --install-hooks
+else
+	pre-commit install --install-hooks
+fi
 
 if [ ! $(which hub) ]; then
 	get_latest_release() {
@@ -53,16 +58,16 @@ if [ ! $(which hub) ]; then
         CYGWIN*|MINGW*|MSYS*) _platform__type="windows" ;;
     esac
 
-	wget -q https://github.com/github/hub/releases/download/${release}/hub-${_platform__type}-${_arch__type}-${release#"v"}.tgz -O- | tar -xzO \*/bin/hub > /urs/local/bin/hub
-	chmod +x ./urs/local/bin/hub
+	sudo wget -q https://github.com/github/hub/releases/download/${release}/hub-${_platform__type}-${_arch__type}-${release#"v"}.tgz -O- | tar -xzO \*/bin/hub > /urs/local/bin/hub
+	sudo chmod +x ./urs/local/bin/hub
 	hub version
 	alias git=hub
 fi
 
-echo -e "${GREEN}We create https://github.com/${GITHUBORG}/click-odoo-${PROJECT}, commit and push ...\n${NC}"
+echo -e "${GREEN}We create https://github.com/${githuborg}/click-odoo-${project}, commit and push ...\n${NC}"
 
 git remote rename origin scaffold
-git create "${GITHUBORG}/click-odoo-${PROJECT}"
+hub create "${githuborg}/click-odoo-${project}"
 
 # Git commit
 git add .
