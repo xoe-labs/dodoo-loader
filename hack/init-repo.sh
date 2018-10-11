@@ -67,5 +67,5 @@ git create "${GITHUBORG}/click-odoo-${PROJECT}"
 # Git commit
 git add .
 git commit -m "Customize Project"
-git push "${GITHUBORG}" origin
+git push --set-upstream origin master
 
