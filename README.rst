@@ -7,7 +7,7 @@ click-odoo-{{ PROJECT }}
 .. image:: https://badge.fury.io/py/click-odoo-.svg
     :target: http://badge.fury.io/py/click-odoo-
 
-``click-odoo-`` is a set of useful Odoo maintenance functions.
+``click-odoo-{{ PROJECT }}`` is a set of useful Odoo maintenance functions.
 They are available as CLI scripts (based on click-odoo_), as well
 as composable python functions.
 
