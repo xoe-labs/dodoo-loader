@@ -70,8 +70,8 @@ fi
 
 echo -e "${GREEN}We create https://github.com/${githuborg}/click-odoo-${project}, commit and push ...\n${NC}"
 
-git remote rename origin scaffold
-$hub_cmd create "${githuborg}/click-odoo-${project}"
+git remote rename origin scaffold || true
+eval "/usr/local/bin/hub create ${githuborg}/click-odoo-${project}"
 
 # Git commit
 git add .

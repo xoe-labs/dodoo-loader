@@ -1,4 +1,4 @@
-click-odoo-{{ PROJECT }}
+click-odoo-loader
 ==================
 
 .. image:: https://img.shields.io/badge/license-LGPL--3-blue.svg
@@ -7,7 +7,7 @@ click-odoo-{{ PROJECT }}
 .. image:: https://badge.fury.io/py/click-odoo-.svg
     :target: http://badge.fury.io/py/click-odoo-
 
-``click-odoo-{{ PROJECT }}`` is a set of useful Odoo maintenance functions.
+``click-odoo-loader`` is a set of useful Odoo maintenance functions.
 They are available as CLI scripts (based on click-odoo_), as well
 as composable python functions.
 
@@ -67,3 +67,19 @@ Useful links
 - report issues at: https://github.com//click-odoo-/issues
 
 .. _click-odoo: https://pypi.python.org/pypi/click-odoo
+
+Credits
+~~~~~~~
+
+Contributors:
+
+- David Arnold (XOE_)
+
+.. _XOE: https://xoe.solutions
+
+Maintainer
+~~~~~~~~~~
+
+.. image:: https://erp.xoe.solutions/logo.png
+   :alt: XOE Corps. SAS
+   :target: https://xoe.solutions
