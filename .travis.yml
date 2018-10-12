@@ -2,38 +2,35 @@ language: python
 cache: pip
 addons:
   postgresql: '9.6'
-stages:
-- name: test
-jobs:
-  include:
-    matrix:
-    - stage: test
-      python: 2.7
-      env: ODOO="8.0"
-    - stage: test
-      python: 2.7
-      env: ODOO="9.0"
-    - stage: test
-      python: 2.7
-      env: ODOO="10.0"
-    - stage: test
+python:
+  - 2.7
+  - 3.5
+  - 3.6
+env:
+  - ODOO="8.0"
+  - ODOO="9.0"
+  - ODOO="10.0"
+  - ODOO="11.0"
+  - ODOO="12.0"
+  - ODOO="master"
+matrix:
+  exclude:
+    - env: ODOO="8.0"
       python: 3.5
-      env: ODOO="11.0"
-    - stage: test
+    - env: ODOO="8.0"
       python: 3.6
-      env: ODOO="11.0"
-    - stage: test
+    - env: ODOO="9.0"
       python: 3.5
-      env: ODOO="12.0"
-    - stage: test
+    - env: ODOO="9.0"
       python: 3.6
-      env: ODOO="12.0"
-    - stage: test
-      python: 3.5
-      env: ODOO="master"
-    - stage: test
-      python: 3.6
-      env: ODOO="master"
+    - env: ODOO="10.0"
+      python: 2.7
+    - env: ODOO="11.0"
+      python: 2.7
+    - env: ODOO="12.0"
+      python: 2.7
+    - env: ODOO="master"
+      python: 2.7
 install:
 - pip install tox-travis
 - pip install codecov
