@@ -64,12 +64,15 @@ if [ ! $(which hub) ]; then
 	sudo chmod +x /usr/local/bin/hub
 	/usr/local/bin/hub version
 	alias git=hub
+	hub_cmd=/usr/local/bin/hub
+else:
+	hub_cmd=$(which hub)
 fi
 
 echo -e "${GREEN}We create https://github.com/${githuborg}/click-odoo-${project}, commit and push ...\n${NC}"
 
 git remote rename origin scaffold
-/usr/local/bin/hub create "${githuborg}/click-odoo-${project}"
+$hub_cmd create "${githuborg}/click-odoo-${project}"
 
 # Git commit
 git add .
