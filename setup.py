@@ -21,6 +21,8 @@ setup(
     ],
     install_requires=[
         'click-odoo>=1.0.0',
+        'networkx',
+        'pandas',
     ],
     license='LGPLv3+',
     author='XOE Labs',
