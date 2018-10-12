@@ -51,6 +51,4 @@ jobs:
         skip_upload_docs: true
         on:
           repo: "xoe-labs/click-odoo-loader"
-          branch: master
           tags: true
-          python:
