@@ -22,10 +22,11 @@
 
 import os
 
+import click
 from click.testing import CliRunner
 # import mock
 
-from click_odoo_contrib.loader import main
+from src.loader import main
 
 HERE = os.path.dirname(__file__)
 DATADIR = os.path.join(HERE, 'data/test_loader/')

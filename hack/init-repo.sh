@@ -6,16 +6,17 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 rm README.md
+mv .no-travis.yml .travis.yml
 
 echo -e "${GREEN}Replacing project variables and seeding files ...\n${NC}"
 
 source <(cat hack/variables.ini | hack/ini2env.py)
 
 # Seed Placeholders
-sed -i "s|{{ PROJECT }}|${project}|g" hack/boilerplate.py.txt .travis.yml README.rst setup.py
+sed -i "s|{{ PROJECT }}|${project}|g" hack/boilerplate.py.txt hack/boilerplate.py.test.txt .travis.yml README.rst setup.py
 sed -i "s|{{ GITHUBORG }}|${githuborg}|g" .travis.yml README.rst setup.py
-sed -i "s|{{ COPYRIGHT }}|${copyright}|g" hack/boilerplate.py.txt
-sed -i "s|{{ AUTHOR }}|${author}|g" hack/boilerplate.py.txt
+sed -i "s|{{ COPYRIGHT }}|${copyright}|g" hack/boilerplate.py.txt hack/boilerplate.py.test.txt
+sed -i "s|{{ AUTHOR }}|${author}|g" hack/boilerplate.py.txt hack/boilerplate.py.test.txt
 sed -i "s|{{ PACKAGE_AUTHOR }}|${package_author}|g" setup.py
 sed -i "s|{{ PACKAGE_AUTHOR_EMAIL }}|${package_author_email}|g" setup.py
 sed -i "s|{{ PYPI_USER }}|${pypi_user}|g" .travis.yml
@@ -24,7 +25,7 @@ sed -i "s|{{ PYPI_TOKEN }}|${pypi_token}|g" .travis.yml
 
 cat hack/boilerplate.readme.credits.txt >> README.rst
 cat hack/boilerplate.py.txt >> "src/${project}.py"
-cat hack/boilerplate.py.txt >> "tests/test_${project}.py"
+cat hack/boilerplate.py.test.txt >> "tests/test_${project}.py"
 mkdir -p "tests/data/test_${project}"
 touch "tests/data/test_${project}/.gitkeep"
 if [ ! $(which pre-commit) ]; then
@@ -62,9 +63,8 @@ if [ ! $(which hub) ]; then
 	sudo -k tar -vxf /tmp/hub.tgz --directory /usr/local/bin/ --strip-components=2 --wildcards \*/bin/hub
 	sudo chmod +x /usr/local/bin/hub
 	/usr/local/bin/hub version
-	alias git=hub
+	echo 'eval "$(hub alias -s)"' >> ~/.bash_profile
 	PATH=$PATH:/usr/local/bin/hub
-	hub_cmd=/usr/local/bin/hub
 fi
 
 echo -e "${GREEN}We create https://github.com/${githuborg}/click-odoo-${project}, commit and push ...\n${NC}"

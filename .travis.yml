@@ -1,17 +1,12 @@
 language: python
-
 cache: pip
-
 addons:
-  postgresql: "9.6"
-
+  postgresql: '9.6'
 stages:
-  - name: test
-  - name: deploy
-    if: tag IS present
-
+- name: test
 jobs:
   include:
+    matrix:
     - stage: test
       python: 2.7
       env: ODOO="8.0"
@@ -39,26 +34,21 @@ jobs:
     - stage: test
       python: 3.6
       env: ODOO="master"
-    - stage: deploy
-      script: echo "Deploy to PyPi"
-      deploy:
-        provider: pypi
-        user: "xoe-labs"
-        password:
-          secure: "do-later"
-        distributions: "sdist bdist_wheel"
-        skip_upload_docs: true
-        on:
-          repo: /click-odoo-loader
-          branch: master
-          tags: true
-
 install:
-  - pip install tox-travis
-  - pip install codecov
-
+- pip install tox-travis
+- pip install codecov
 script:
-  - tox
-
+- tox
 after_success:
-  - codecov
+- codecov
+deploy:
+  provider: pypi
+  user: xoe-labs
+  password:
+    secure: AtP2RZw//uSerywH9I1lbU0Qz7K351h5jOo1lTExjGsCrzCGOqX23djk/FbABPfNqdkm2lZDKynJgJewqbdRZkX82oZRerpUgxTSELebwPgrikYkP8NAFgm8LqA8I8nrLtErFulOm8q88ldyL30+/BhKujWEjz6uWrWCA2+GfE5Q80YmiYBsbEZR+kSwbsAEEUL+eyF4Bcz4g1uV39PVkTkFh/OgvmXzSjv7uMbZ6Qs5V9nE2FjhveAH58dHuFEjvxnxmvc3vp3c2GiGtYG1uSEI8XOoUNWuTNAd0l6t81KWK7S4TFo9J/utA96CgNWC3yakP1eveDrAWjKCCWs3+Jd5s0iXbAxSxNsUn1kWJqKt758cZPAdja+jFRpb4DHzZqeLg4myl5lRAZ0OOKRD6L1N+wWCPSBxpfveaJrQ6Ba7P3drJVP/3FDEHKmWOfytUaTLg6iHpQ2gBcpovBz9HiYV+ElPzU9mbM+e1cjBsv+LlC5JBrigA03RL4+neerQT+RY6KsQX/YwkrPgv8t9drp+Nw+fYYNH99x9mr637QFmepMxcUAYwImO7yZrahsr04p5HuFfaKWS4OtvlpkIl4oi1oThmq/IdgdfWIGKuHlJHfPHOsEOSiiOnEsfNGdP00Rdg7VsMLe0cgNeATjUMyTgX7watqa4GnzJoydvbQM=
+  distributions: sdist bdist_wheel
+  skip_upload_docs: true
+  on:
+    repo: "xoe-labs/click-odoo-loader"
+    branch: master
+    tags: true

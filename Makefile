@@ -6,8 +6,8 @@ init: chmod-scripts
 	editor hack/boilerplate.readme.credits.txt
 	hack/init-repo.sh
 
-sync:
-	git pull scaffold master
+sync: chmod-scripts
+	hack/sync-with-scaffold.sh
 
 chmod-scripts:
 	chmod +x -R hack

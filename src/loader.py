@@ -34,7 +34,7 @@ import click_odoo
 
 # from click_odoo import odoo
 
-# from ..utils import manifest, gitutils
+# from utils import manifest, gitutils
 
 _logger = logging.getLogger(__name__)
 
