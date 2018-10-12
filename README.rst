@@ -15,48 +15,63 @@ as composable python functions.
 
 Script [EXAMPLE - Put output of `--help` here]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. code::
+.. code:: bash
 
-  Usage: click-odoo-initdb [OPTIONS]
+   Usage: loader.py [OPTIONS]
 
-    Create an Odoo database with pre-installed modules.
+      Load data into an Odoo Database.
 
-    Almost like standard Odoo does with the -i option, except this script
-    manages a cache of database templates with the exact same addons
-    installed. This is particularly useful to save time when initializing test
-    databases.
+      Loads data supplied in a supported format by file or stream into a local
+      or remote Odoo database.
 
-    Cached templates are identified by computing a sha1 checksum of modules
-    provided with the -m option, including their dependencies and
-    corresponding auto_install modules.
+      Highlights:
 
-  Options:
-    -c, --config PATH         ...
-    ...
-    -n, --new-database TEXT   Name of new database to create, possibly from
-			      cache. If absent, only the cache trimming
-			      operation is executed.
-    -m, --modules TEXT        Comma separated list of addons to install.
-			      [default: base]
-    --demo / --no-demo        Load Odoo demo data.  [default: True]
-    --cache / --no-cache      Use a cache of database templates with the exact
-			      same addons installed. Disabling this option also
-			      disables all other cache-related operations such
-			      as max-age or size. Note: when the cache is
-			      enabled, all attachments created during database
-			      initialization are stored in database instead of
-			      the default Odoo file store.  [default: True]
-    --cache-prefix TEXT       Prefix to use when naming cache template databases
-			      (max 8 characters). CAUTION: all databases named
-			      like {prefix}-____________-% will eventually be
-			      dropped by the cache control mechanism, so choose
-			      the prefix wisely.  [default: cache]
-    --cache-max-age INTEGER   Drop cache templates that have not been used for
-			      more than N days. Use -1 to disable.  [default:
-			      30]
-    --cache-max-size INTEGER  Keep N most recently used cache templates. Use -1
-			      to disable. Use 0 to empty cache.  [default: 5]
-    --help                    Show this message and exit.
+      - Detects model-level graph dependency on related fields and   record
+      level graph dependencies in tree-like tables (hierarchies)   and loads
+      everything in the correct order.
+
+      - Supported import formats are governed by the excellent pandas library.
+      Most useful: JSON & CSV
+
+      - Through `output` persistence flag: can be run idempotently.
+
+      - Can trigger onchange as if data was entered through forms.
+
+      Returns joy.
+
+    Options:
+      -c, --config FILE           Specify the Odoo configuration file. Other ways
+                                  to provide it are with the ODOO_RC or
+                                  OPENERP_SERVER environment variables, or
+                                  ~/.odoorc (Odoo >= 10) or ~/.openerp_serverrc.
+      -d, --database TEXT         Specify the database name. If present, this
+                                  parameter takes precedence over the database
+                                  provided in the Odoo configuration file.
+      --log-level TEXT            Specify the logging level. Accepted values
+                                  depend on the Odoo version, and include debug,
+                                  info, warn, error.  [default: warn]
+      --logfile FILE              Specify the log file.
+      -s, --src FILENAME          Path to the file, that you want to load. You can
+                                  specify this option multiple times for more than
+                                  one file to load.  [required]
+      -t, --type [json|csv|xls]   Input date type.  [default: csv]
+      --onchange / --no-onchange  Trigger onchange methods as if data was entered
+                                  through normal form views.  [default: True]
+      --batch INTEGER             The batch size. Records are cut-off for
+                                  iteration after so many records. Nested lines do
+                                  not count towards that value. In *very* complex
+                                  loading scenarios: take some care with nested
+                                  records.  [default: 50]
+      --out FILENAME              Persist the server's output into a JSON database
+                                  alongside each source file. On subsequent runs,
+                                  sucessfull loads are deduplicated.  [default:
+                                  ./log.json]
+      -m, --model TEXT            When loading from unnamed streams, you can
+                                  specify the modles of each stream. They must be
+                                  presented in the same order as the streams.
+                                  Note: don't use with xls streams as model is
+                                  inferred from sheetnames.
+      --help                      Show this message and exit.
 
 
 Useful links
