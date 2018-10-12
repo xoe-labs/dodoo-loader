@@ -36,7 +36,7 @@ def test_read_files(odoodb, odoocfg):
     """ Test if XLSX, XLS, CSV & JSON files load into DataSetGraph """
 
     # First try if script bails out correctly for config errors
-    CliRunner().invoke(main, [
+    result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
         '--src', DATADIR + "noname1",
@@ -44,45 +44,51 @@ def test_read_files(odoodb, odoocfg):
         # default: '--type', "csv",
         'res.partner'
     ])
+    assert result.exit_code == 0
 
-    CliRunner().invoke(main, [
+    result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
         '--src', DATADIR + "res_partner.xls",
         '--type', "xls",
         'res.partner'
     ])
+    assert result.exit_code == 0
 
     # Serious loadnig
-    CliRunner().invoke(main, [
+    result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
         '--src', DATADIR + "res_partner.xlsx",
         '--type', "xls",
     ])
+    assert result.exit_code == 0
 
-    CliRunner().invoke(main, [
+    result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
         '--src', DATADIR + "res_partner.xls",
         '--type', "xls",
     ])
+    assert result.exit_code == 0
 
-    CliRunner().invoke(main, [
+    result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
         '--src', DATADIR + "res.partner.csv",
         # default: '--type', "csv",
     ])
+    assert result.exit_code == 0
 
-    CliRunner().invoke(main, [
+    result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
         '--src', DATADIR + "res.partner.json",
         '--type', "json",
     ])
+    assert result.exit_code == 0
 
-    CliRunner().invoke(main, [
+    result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
         '--src', DATADIR + "noname1",
@@ -90,15 +96,17 @@ def test_read_files(odoodb, odoocfg):
         # default: '--type', "csv",
         'res.partner res.partner'
     ])
+    assert result.exit_code == 0
 
 
 def test_file_dependency(odoodb, odoocfg):
     """ Test if two dependend files will be loaded in the correct order """
 
-    CliRunner().invoke(main, [
+    result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
         '--src', DATADIR + "res.country.state.json",  # Should load second
         '--src', DATADIR + "res.country.json",  # Should load first
         '--type', "json",
     ])
+    assert result.exit_code == 0
