@@ -60,19 +60,18 @@ if [ ! $(which hub) ]; then
     esac
 
 	wget -p https://github.com/github/hub/releases/download/${release}/hub-${_platform__type}-${_arch__type}-${release#"v"}.tgz -O /tmp/hub.tgz
-	sudo -k tar -vxf /tmp/hub.tgz --strip-components=2 --wildcards \*/bin/hub -C /usr/local/bin
-	sudo chmod +x ./usr/local/bin/hub
-	hub version
+	sudo -k tar -vxf /tmp/hub.tgz --directory /usr/local/bin/ --strip-components=2 --wildcards \*/bin/hub
+	sudo chmod +x /usr/local/bin/hub
+	/usr/local/bin/hub version
 	alias git=hub
 fi
 
 echo -e "${GREEN}We create https://github.com/${githuborg}/click-odoo-${project}, commit and push ...\n${NC}"
 
 git remote rename origin scaffold
-hub create "${githuborg}/click-odoo-${project}"
+/usr/local/bin/hub create "${githuborg}/click-odoo-${project}"
 
 # Git commit
 git add .
 git commit -m "Customize Project"
 git push --set-upstream origin master
-
