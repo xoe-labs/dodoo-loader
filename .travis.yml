@@ -43,7 +43,7 @@ jobs:
       script: echo "Deploy to PyPi"
       deploy:
         provider: pypi
-        user: {{ PYPI_USER }}
+        user: "{{ PYPI_USER }}"
         password:
           secure: "{{ PYPI_TOKEN }}"
         distributions: "sdist bdist_wheel"
@@ -52,7 +52,7 @@ jobs:
           repo: /click-odoo-{{ PROJECT }}
           branch: master
           tags: true
- 
+
 install:
   - pip install tox-travis
   - pip install codecov
