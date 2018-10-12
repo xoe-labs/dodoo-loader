@@ -1,6 +1,5 @@
 #!/bin/bash
 
-project_name=$(basename "$(pwd)")
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -32,7 +31,7 @@ touch "tests/data/test_${project}/.gitkeep"
 if [ ! $(which pre-commit) ]; then
 	echo -e "${RED}We install a bunch of pre-commit.com hooks"
 	echo -e  "to help you produce better code ...\n${NC}"
-	sudo -H pip install pre-commit
+	sudo -k -H pip install pre-commit
 	pre-commit install
 else
 	pre-commit install
@@ -60,8 +59,9 @@ if [ ! $(which hub) ]; then
         CYGWIN*|MINGW*|MSYS*) _platform__type="windows" ;;
     esac
 
-	sudo wget -q https://github.com/github/hub/releases/download/${release}/hub-${_platform__type}-${_arch__type}-${release#"v"}.tgz -O- | tar -xzO \*/bin/hub > /urs/local/bin/hub
-	sudo chmod +x ./urs/local/bin/hub
+	wget -p https://github.com/github/hub/releases/download/${release}/hub-${_platform__type}-${_arch__type}-${release#"v"}.tgz -O /tmp/hub.tgz
+	sudo -k tar -vxf /tmp/hub.tgz --strip-components=2 --wildcards \*/bin/hub -C /usr/local/bin
+	sudo chmod +x ./usr/local/bin/hub
 	hub version
 	alias git=hub
 fi
