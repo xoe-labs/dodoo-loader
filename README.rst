@@ -14,7 +14,7 @@ as composable python functions.
 .. contents::
 
 Script [EXAMPLE - Put output of `--help` here]
-~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. code::
 
   Usage: click-odoo-initdb [OPTIONS]
