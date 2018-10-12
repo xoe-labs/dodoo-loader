@@ -22,7 +22,7 @@
 
 import os
 
-import click
+# import click
 from click.testing import CliRunner
 # import mock
 
