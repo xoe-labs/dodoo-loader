@@ -17,61 +17,71 @@ Script [EXAMPLE - Put output of `--help` here]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. code:: bash
 
-   Usage: loader.py [OPTIONS]
+  Usage: loader.py [OPTIONS]
 
-      Load data into an Odoo Database.
+    Load data into an Odoo Database.
 
-      Loads data supplied in a supported format by file or stream into a local
-      or remote Odoo database.
+    Loads data supplied in a supported format by file or stream into a local
+    or remote Odoo database.
 
-      Highlights:
+    Highlights:
 
-      - Detects model-level graph dependency on related fields and   record
-      level graph dependencies in tree-like tables (hierarchies)   and loads
-      everything in the correct order.
+    - Detects model-level graph dependency on related fields and   record
+    level graph dependencies in tree-like tables (hierarchies)   and loads
+    everything in the correct order*.
 
-      - Supported import formats are governed by the excellent pandas library.
-      Most useful: JSON & CSV
+    - Supported import formats are governed by the excellent pandas library.
+    Most useful: JSON, CSV, XLS & XLSX
 
-      - Through `output` persistence flag: can be run idempotently.
+    - Through `output` persistence flag: can be run idempotently.
 
-      - Can trigger onchange as if data was entered through forms.
+    - Can trigger onchange as if data was entered through forms.
 
-      Returns joy.
+    * Only */.id or /id are supported for parent fields. This is due to the
+    fact that we cannot pipe through name_seach previous of the creation of
+    the relevant reocrds. Furthermore, it must be the same format as the id
+    column. Either 'id' and '*/id' or '.id' and '*/.id'.
 
-    Options:
-      -c, --config FILE           Specify the Odoo configuration file. Other ways
-                                  to provide it are with the ODOO_RC or
-                                  OPENERP_SERVER environment variables, or
-                                  ~/.odoorc (Odoo >= 10) or ~/.openerp_serverrc.
-      -d, --database TEXT         Specify the database name. If present, this
-                                  parameter takes precedence over the database
-                                  provided in the Odoo configuration file.
-      --log-level TEXT            Specify the logging level. Accepted values
-                                  depend on the Odoo version, and include debug,
-                                  info, warn, error.  [default: warn]
-      --logfile FILE              Specify the log file.
-      -s, --src FILENAME          Path to the file, that you want to load. You can
-                                  specify this option multiple times for more than
-                                  one file to load.  [required]
-      -t, --type [json|csv|xls]   Input date type.  [default: csv]
-      --onchange / --no-onchange  Trigger onchange methods as if data was entered
-                                  through normal form views.  [default: True]
-      --batch INTEGER             The batch size. Records are cut-off for
-                                  iteration after so many records. Nested lines do
-                                  not count towards that value. In *very* complex
-                                  loading scenarios: take some care with nested
-                                  records.  [default: 50]
-      --out FILENAME              Persist the server's output into a JSON database
-                                  alongside each source file. On subsequent runs,
-                                  sucessfull loads are deduplicated.  [default:
-                                  ./log.json]
-      -m, --model TEXT            When loading from unnamed streams, you can
-                                  specify the modles of each stream. They must be
-                                  presented in the same order as the streams.
-                                  Note: don't use with xls streams as model is
-                                  inferred from sheetnames.
-      --help                      Show this message and exit.
+    Writes sucess status of batches in JSON format into --out.
+
+  Options:
+    -c, --config FILE           Specify the Odoo configuration file. Other ways
+                                to provide it are with the ODOO_RC or
+                                OPENERP_SERVER environment variables, or
+                                ~/.odoorc (Odoo >= 10) or ~/.openerp_serverrc.
+    -d, --database TEXT         Specify the database name. If present, this
+                                parameter takes precedence over the database
+                                provided in the Odoo configuration file.
+    --log-level TEXT            Specify the logging level. Accepted values
+                                depend on the Odoo version, and include debug,
+                                info, warn, error.  [default: warn]
+    --logfile FILE              Specify the log file.
+    -f, --file FILENAME         Path to the file, that you want to load.
+                                You can
+                                specify this option multiple times for more than
+                                one file to load.
+    -s, --stream TEXT...        Stream, that you want to load.
+                                        Format:
+                                -s stream type model
+                                                `type` can
+                                be csv or json.
+                                                `model` can be
+                                any odoo model availabe in env.
+                                You can specify
+                                this option multiple times for more than one
+                                stream to load.
+    --onchange / --no-onchange  Trigger onchange methods as if data was entered
+                                through normal form views.  [default: True]
+    --batch INTEGER             The batch size. Records are cut-off for
+                                iteration after so many records. Nested lines do
+                                not count towards that value. In *very* complex
+                                loading scenarios: take some care with nested
+                                records.  [default: 50]
+    --out FILENAME              Persist the server's output into a JSON database
+                                alongside each source file. On subsequent runs,
+                                sucessfull loads are deduplicated.  [default:
+                                ./log.json]
+    --help                      Show this message and exit.
 
 
 Useful links

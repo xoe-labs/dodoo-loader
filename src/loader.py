@@ -270,7 +270,7 @@ def main(env, file, stream, onchange, batch, out):
 
     - Detects model-level graph dependency on related fields and
       record level graph dependencies in tree-like tables (hierarchies)
-      and loads everything in the correct order.
+      and loads everything in the correct order*.
 
     - Supported import formats are governed by the excellent pandas library.
       Most useful: JSON, CSV, XLS & XLSX
@@ -279,7 +279,12 @@ def main(env, file, stream, onchange, batch, out):
 
     - Can trigger onchange as if data was entered through forms.
 
-    Returns joy.
+    * Only */.id or /id are supported for parent fields. This is due to the
+      fact that we cannot pipe through name_seach previous of the creation of
+      the relevant reocrds. Furthermore, it must be the same format as the id
+      column. Either 'id' and '*/id' or '.id' and '*/.id'.
+
+    Writes sucess status of batches in JSON format into --out.
     """
 
     global ENV  # pylint: disable=W0601
