@@ -47,8 +47,8 @@ def load(env, model, chunk):
     """ Loads a chunk into model.
     Public method. Can be scheduled into threads. Interface method. """
     res = env[model].load(
-        chunk.columns.tolist(),  # fields
-        chunk.fillna('').astype(str).values.tolist()  # data
+        [chunk.index.name] + chunk.columns.tolist(),  # fields
+        chunk.fillna('').astype(str).reset_index().values.tolist()  # data
     )
 
     # Make current return API more explicit
@@ -57,10 +57,11 @@ def load(env, model, chunk):
     return 'success', res['ids'], res['messages']
 
 
-def log_load_json(state, ids, msgs, batch, model):
+def log_load_json(state, ids, extids, msgs, batch, model):
     """ Logs load result into json chunk. Interface method. """
     return bytes(json.dumps({
         'batch': batch,
+        'candidates': extids,
         'loaded': ids,
         'model': model,
         'state': state,
@@ -121,27 +122,27 @@ class DataSetGraph(nx.DiGraph):
         suitable loading order.
         TODO: Does not work with nested rows. Flatten everything first? """
         for node, data in self.nodes(data=True):
-            parent_column = [col for col in data['cols']
+            parent_col = [col for col in data['cols']
                 if col['name'] == data['parent']]
-            id_ = data['cols'][0]['name']  # First column MUST be id.
+            if not parent_col:
+                continue
+            parent_col = parent_col[0]
+            idx = data['df'].index.name
 
             # We can only infer parent dependency if id and parent_id column
             # are in the same format (eg .id & /.id or id & /id)
-            if not parent_column or parent_column[0]['subfield'] != id_:
+            if parent_col['subfield'] != idx:
                 continue
 
-            parent = (parent_column[0]['name'] + '/' +
-                parent_column[0]['subfield'])
+            parent = parent_col['name'] + '/' + parent_col['subfield']
             record_graph = nx.DiGraph()
 
-            data['df'].set_index(id_, inplace=True)
             record_graph.add_nodes_from(data['df'].index.tolist())
             record_graph.add_edges_from(
                 data['df'][parent][data['df'][parent].notnull()].iteritems()
             )
             data['df'] = data['df'].reindex(
                 nx.topological_sort(record_graph.reverse(True)))
-            data['df'].reset_index(level=0, inplace=True)
 
     def chunk_dataframes(self, batch):
         """ Chunks dataframes as per provided batch size.
@@ -177,7 +178,7 @@ class DataSetGraph(nx.DiGraph):
                     self.env, self.nodes[node]['model'], df)
                 if log_stream:
                     log_stream.write(
-                        log_load_json(state, ids, msgs, batch,
+                        log_load_json(state, ids, df.index.tolist(), msgs, batch,
                             self.nodes[node]['model']))
 
 
@@ -202,6 +203,7 @@ def _load_dataframes(buf, input_type, model):
             if not model:
                 continue
             df = _read_excel(xlf, name)
+            df.set_index(df.columns[0], inplace=True)
             GRAPH.add_node(id(df), model=model, df=df)
         return
 
@@ -209,8 +211,10 @@ def _load_dataframes(buf, input_type, model):
         return
     if input_type == 'csv':
         df = _read_csv(buf)
+        df.set_index(df.columns[0], inplace=True)
     if input_type == 'json':
         df = _read_json(buf)
+        df.set_index(df.columns[0], inplace=True)
     GRAPH.add_node(id(df), model=model, df=df)
 
 
