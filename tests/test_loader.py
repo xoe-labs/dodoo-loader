@@ -36,26 +36,30 @@ def test_read_files(odoodb, odoocfg):
     """ Test if XLSX, XLS, CSV & JSON files load into DataSetGraph """
 
     # First try if script bails out correctly for config errors
+    # With two --src, ther must be two --model, not one.
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
         '--src', DATADIR + "noname1",
-        '--src', DATADIR + "noname1",
+        '--src', DATADIR + "noname2",
         # default: '--type', "csv",
-        'res.partner'
+        '--model', 'res.partner'
     ])
-    assert result.exit_code == 0
+    assert result.exit_code != 0
 
+    # Cannot specify --model with xls
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
         '--src', DATADIR + "res_partner.xls",
         '--type', "xls",
-        'res.partner'
+        '--model', 'res.partner',
     ])
-    assert result.exit_code == 0
+    assert result.exit_code != 0
 
-    # Serious loadnig
+    # Serious loading
+
+    # Test xlsx
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
@@ -64,6 +68,7 @@ def test_read_files(odoodb, odoocfg):
     ])
     assert result.exit_code == 0
 
+    # Test xls
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
@@ -72,6 +77,7 @@ def test_read_files(odoodb, odoocfg):
     ])
     assert result.exit_code == 0
 
+    # Test csv
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
@@ -80,6 +86,7 @@ def test_read_files(odoodb, odoocfg):
     ])
     assert result.exit_code == 0
 
+    # Test json
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
@@ -88,13 +95,15 @@ def test_read_files(odoodb, odoocfg):
     ])
     assert result.exit_code == 0
 
+    # Test 2 csv
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
         '--src', DATADIR + "noname1",
-        '--src', DATADIR + "noname1",
+        '--src', DATADIR + "noname2",
         # default: '--type', "csv",
-        'res.partner res.partner'
+        '--model', 'res.partner',
+        '--model', 'res.partner',
     ])
     assert result.exit_code == 0
 
