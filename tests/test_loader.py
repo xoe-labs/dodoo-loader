@@ -87,7 +87,6 @@ def test_bad_parameter(odoodb, odoocfg):
 def test_read_basic_files(odoodb, odoocfg):
     """ Test if XLSX, XLS, CSV & JSON files load into DataSetGraph """
 
-
     # Test xlsx
     result = CliRunner().invoke(main, [
         '-d', odoodb,
@@ -104,14 +103,6 @@ def test_read_basic_files(odoodb, odoocfg):
     ])
     assert result.exit_code == 0
 
-    # Test csv
-    result = CliRunner().invoke(main, [
-        '-d', odoodb,
-        '-c', str(odoocfg),
-        '--file', DATADIR + "res.partner.csv",
-    ])
-    assert result.exit_code == 0
-
     # Test json
     result = CliRunner().invoke(main, [
         '-d', odoodb,
@@ -123,31 +114,27 @@ def test_read_basic_files(odoodb, odoocfg):
     with OdooEnvironment(database=odoodb) as env:
         assert env.ref('__import__.res_partner_5')  # XLSX
         assert env.ref('__import__.res_partner_10')  # XLS
-        assert env.ref('__import__.res_partner_18')  # CSV
-        assert env.ref('__import__.res_partner_24')  #JSON
+        assert env.ref('__import__.res_partner_24')  # JSON
 
 
-    # # Test 2 csv
-    # result = CliRunner().invoke(main, [
-    #     '-d', odoodb,
-    #     '-c', str(odoocfg),
-    #     '--file', DATADIR + "noname1",
-    #     '--src', DATADIR + "noname2",
-    #     # default: '--type', "csv",
-    #     '--model', 'res.partner',
-    #     '--model', 'res.partner',
-    # ])
-    # assert result.exit_code == 0
+def test_file_dependency(odoodb, odoocfg):
+    """ Test dependency either between files or within a file (hierarchy) """
 
+    result = CliRunner().invoke(main, [
+        '-d', odoodb,
+        '-c', str(odoocfg),
+        '--file', DATADIR + "res.country.state.json",  # Should load second
+        '--file', DATADIR + "res.country.json",  # Should load first
+    ])
+    assert result.exit_code == 0
 
-# def test_file_dependency(odoodb, odoocfg):
-#     """ Test if two dependend files will be loaded in the correct order """
-
-#     result = CliRunner().invoke(main, [
-#         '-d', odoodb,
-#         '-c', str(odoocfg),
-#         '--src', DATADIR + "res.country.state.json",  # Should load second
-#         '--src', DATADIR + "res.country.json",  # Should load first
-#         '--type', "json",
-#     ])
-#     assert result.exit_code == 0
+    # Test csv & parent field reorganization
+    result = CliRunner().invoke(main, [
+        '-d', odoodb,
+        '-c', str(odoocfg),
+        '--file', DATADIR + "res.partner.csv",  # Records are in wrong order
+    ])
+    assert result.exit_code == 0
+    with OdooEnvironment(database=odoodb) as env:
+        assert env.ref('__import__.res_country_state_1')  # Dependencies
+        assert env.ref('__import__.res_partner_18')  # CSV with parent field

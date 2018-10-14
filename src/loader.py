@@ -32,7 +32,7 @@ import networkx as nx
 import click
 import click_odoo
 
-# from click_odoo import odoo
+from click_odoo import odoo
 
 # from utils import manifest, gitutils
 
@@ -83,7 +83,9 @@ class DataSetGraph(nx.DiGraph):
             # Normalize column names
             data['cols'] = []
             for col in data['df'].columns:
-                data['cols'].append({'name': col.rstrip('/.id').rstrip('/id')})
+                fixed = odoo.models.fix_import_export_id_paths(col)
+                data['cols'].append({'name': fixed[0],
+                    'subfield': fixed[1] if len(fixed) == 2 else ''})
 
             klass = self.env[data['model']]
 
@@ -108,10 +110,10 @@ class DataSetGraph(nx.DiGraph):
     def seed_edges(self):
         """ Seeds the edges based on the df columns relations
         and existing models in the graph """
-        for node_u, cols in self.nodes(data='cols'):
-            for col in cols:
+        for node_u, data in self.nodes(data=True):
+            for col in [col for col in data['cols'] if col.get('model')]:
                 for node_v, model in self.nodes(data='model'):
-                    if col.get('model') and col['model'] != model:
+                    if col['model'] == model and col['name'] != data['parent']:
                         self.add_edge(node_u, node_v, column=col['name'])
 
     def order_to_parent(self):
@@ -119,16 +121,27 @@ class DataSetGraph(nx.DiGraph):
         suitable loading order.
         TODO: Does not work with nested rows. Flatten everything first? """
         for node, data in self.nodes(data=True):
-            if data['parent'] not in [c['name'] for c in data['cols']]:
+            parent_column = [col for col in data['cols']
+                if col['name'] == data['parent']]
+            id_ = data['cols'][0]['name']  # First column MUST be id.
+
+            # We can only infer parent dependency if id and parent_id column
+            # are in the same format (eg .id & /.id or id & /id)
+            if not parent_column or parent_column[0]['subfield'] != id_:
                 continue
+
+            parent = (parent_column[0]['name'] + '/' +
+                parent_column[0]['subfield'])
             record_graph = nx.DiGraph()
+
+            data['df'].set_index(id_, inplace=True)
             record_graph.add_nodes_from(data['df'].index.tolist())
             record_graph.add_edges_from(
-                data['df'].loc[:, parent][
-                    data['df'][parent].notnull()
-                ].itertuples)
-            data['df'].reindex(
-                nx.topological_sort(record_graph.reverse(False)))
+                data['df'][parent][data['df'][parent].notnull()].iteritems()
+            )
+            data['df'] = data['df'].reindex(
+                nx.topological_sort(record_graph.reverse(True)))
+            data['df'].reset_index(level=0, inplace=True)
 
     def chunk_dataframes(self, batch):
         """ Chunks dataframes as per provided batch size.

@@ -1,7 +1,8 @@
 [
   {
     "id": "__import__.res_country_state_1",
-    "country_id/id": "res_country_test",
-    "name": "Test State"
+    "country_id/id": "__import__.res_country_test",
+    "name": "Test State",
+    "code": "TST"
   }
 ]

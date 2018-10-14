@@ -1,8 +1,8 @@
-id,name,company_type,parent_id,type,street,street2,city,state_id/id,zip,country_id,website,phone,mobile,email
-__import__.res_partner_15,CSV Grocery Outlet,Company,,,51 Federal Street,#401,San Francisco,base.state_us_5,94107,US,groceryoutlet.com,123456789,,
-__import__.res_partner_16,CSV Bob,Individual,CSV Grocery Outlet,Contact,,,,,,,,,4157654321,
-__import__.res_partner_17,CSV Bill,Individual,CSV Grocery Outlet,Other address,645 21st Street,,San Francisco,base.state_us_5,94110,US,,,4517864512,
-__import__.res_partner_18,CSV Warehouse,Individual,CSV Grocery Outlet,Shipping address,645 21st Street,,San Francisco,base.state_us_5,94110,US,,415659874,,bill@grocery-outlet.com
-__import__.res_partner_19,CSV Accounting dep.,Individual,CSV Grocery Outlet,Invoice address,51 Federal Street,#404,San Francisco,base.state_us_5,94107,US,,123456780,,
+id,name,company_type,parent_id/id,type,street,street2,city,state_id/id,zip,country_id,website,phone,mobile,email
+__import__.res_partner_16,CSV Bob,Individual,__import__.res_partner_15,Contact,,,,,,,,,4157654321,
+__import__.res_partner_17,CSV Bill,Individual,__import__.res_partner_15,Other address,645 21st Street,,San Francisco,base.state_us_5,94110,US,,,4517864512,
+__import__.res_partner_18,CSV Warehouse,Individual,__import__.res_partner_15,Shipping address,645 21st Street,,San Francisco,base.state_us_5,94110,US,,415659874,,bill@grocery-outlet.com
+__import__.res_partner_19,CSV Accounting dep.,Individual,__import__.res_partner_15,Invoice address,51 Federal Street,#404,San Francisco,base.state_us_5,94107,US,,123456780,,
 __import__.res_partner_20,CSV ASUSTeK,Company,,,3442 2nd Avenue,,New York,base.state_us_27,11201,US,asustek.com,654978123,,
 __import__.res_partner_21,CSV Camptocamp,Company,,,Press Avenue 93,,Le Bourget du Lac,,73377,FR,,,,
+__import__.res_partner_15,CSV Grocery Outlet,Company,,,51 Federal Street,#401,San Francisco,base.state_us_5,94107,US,groceryoutlet.com,123456789,,
