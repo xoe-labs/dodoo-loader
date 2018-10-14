@@ -4,6 +4,9 @@
 /tmp
 /tests/data/test_makepot/addon_test_makepot/i18n/*
 
+# Loading logs
+log.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

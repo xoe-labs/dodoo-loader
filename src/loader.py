@@ -79,54 +79,55 @@ class DataSetGraph(nx.DiGraph):
     def load_metadata(self):
         """ Loads all required metadata from the odoo enviornment
         for all nodes in the graph and normalizes column names"""
-        for node in self.nodes:
+        for node, data in self.nodes(data=True):
             # Normalize column names
-            node['cols'] = []
-            for col in node['df'].columns:
-                node['cols'].append({'name': col.rstrip('/.id').rstrip('/id')})
+            data['cols'] = []
+            for col in data['df'].columns:
+                data['cols'].append({'name': col.rstrip('/.id').rstrip('/id')})
 
-            klass = self.env[node['model']]
+            klass = self.env[data['model']]
 
-            node['fields'] = {'stored': [], 'relational': []}
+            data['fields'] = {'stored': [], 'relational': []}
             # spec: {'relational': [{'name':'', 'model':''}]}
-            node['parent'] = klass._parent_name  # pylint: disable=W0212
-            node['repr'] = klass._description  # pylint: disable=W0212
-            for field in klass._fields:
+            data['parent'] = klass._parent_name  # pylint: disable=W0212
+            data['repr'] = klass._description  # pylint: disable=W0212
+
+            for name, field in klass._fields.items():
                 if field.store:
-                    node['fields']['stored'].append(field)
+                    data['fields']['stored'].append(field)
                 if field.relational:
-                    node['fields']['relational'].append(
+                    data['fields']['relational'].append(
                         {'name': field.name, 'model': field.comodel_name})
 
             # Enrich cols with data from odoo env (convenience)
-            for col in node['cols']:
-                for rel in node['fields']['relational'].items():
+            for col in data['cols']:
+                for rel in data['fields']['relational']:
                     if col['name'] == rel['name']:
                         col['model'] = rel['model']
 
     def seed_edges(self):
         """ Seeds the edges based on the df columns relations
         and existing models in the graph """
-        for node_u, cols in self.nodes(data='fields'):
+        for node_u, cols in self.nodes(data='cols'):
             for col in cols:
-                for node_v, model in self.nodes(data='model').items():
-                    if col['model'] != model:
+                for node_v, model in self.nodes(data='model'):
+                    if col.get('model') and col['model'] != model:
                         self.add_edge(node_u, node_v, column=col['name'])
 
     def order_to_parent(self):
         """ Reorganizes dataframes for parent fields so they are in
         suitable loading order.
         TODO: Does not work with nested rows. Flatten everything first? """
-        for node, parent in self.nodes(data='parent'):
-            if parent not in [c['name'] for c in node['cols'].items()]:
+        for node, data in self.nodes(data=True):
+            if data['parent'] not in [c['name'] for c in data['cols']]:
                 continue
             record_graph = nx.DiGraph()
-            record_graph.add_nodes_from(node['df'].index.tolist())
+            record_graph.add_nodes_from(data['df'].index.tolist())
             record_graph.add_edges_from(
-                node['df'].loc[:, parent][
-                    node['df'][parent].notnull()
+                data['df'].loc[:, parent][
+                    data['df'][parent].notnull()
                 ].itertuples)
-            node['df'].reindex(
+            data['df'].reindex(
                 nx.topological_sort(record_graph.reverse(False)))
 
     def chunk_dataframes(self, batch):
@@ -139,11 +140,12 @@ class DataSetGraph(nx.DiGraph):
             dependency lock. This is usually not a problem, as hierarchy tables
             tend to be relatively small in size and simple in datastructure.
         """
-        for node, df in self.nodes(data='df'):
+        for node, data in self.nodes(data=True):
             # https://stackoverflow.com/a/25703030
             # returns an iterable over (key, group)
-            node['chunked_iterable'] = df.groupby(np.arange(len(df))//batch)
-            del node['df']
+            data['chunked_iterable'] = data['df'].groupby(
+                np.arange(len(data['df']))//batch)
+            del data['df']
             # force gc collection as allocated memory
             # chunks might non-negligable.
             gc.collect()
@@ -153,14 +155,17 @@ class DataSetGraph(nx.DiGraph):
         order into their respective model. Writes return state as json into
         the log_buf reciever """
         for node in nx.topological_sort(self.reverse(False)):
-            batchlen = len(node['chunked_iterable'])
-            for batch, df in node['chunked_iterable']:
+            batchlen = len(self.nodes[node]['chunked_iterable'])
+            for batch, df in self.nodes[node]['chunked_iterable']:
                 _logger.info("Synchronously loading %s (%s), batch %s/%s.",
-                             node['repr'], node['model'], batch, batchlen)
-                state, ids, msgs = load(self.env, node['model'], df)
+                             self.nodes[node]['repr'],
+                             self.nodes[node]['model'], batch, batchlen)
+                state, ids, msgs = load(
+                    self.env, self.nodes[node]['model'], df)
                 if log_stream:
                     log_stream.write(
-                        log_load_json(state, ids, msgs, batch, node['model']))
+                        log_load_json(state, ids, msgs, batch,
+                            self.nodes[node]['model']))
 
 
 def _infer_valid_model(filename):
@@ -184,7 +189,7 @@ def _load_dataframes(buf, input_type, model):
             if not model:
                 continue
             df = _read_excel(xlf, name)
-            GRAPH.add_node(model=model, df=df)
+            GRAPH.add_node(id(df), model=model, df=df)
         return
 
     if not model:
@@ -193,7 +198,7 @@ def _load_dataframes(buf, input_type, model):
         df = _read_csv(buf)
     if input_type == 'json':
         df = _read_json(buf)
-    GRAPH.add_node(model=model, df=df)
+    GRAPH.add_node(id(df), model=model, df=df)
 
 
 def _read_csv(filepath_or_buffer):
@@ -283,6 +288,7 @@ def main(env, file, stream, onchange, batch, out):
                 "{} doesn't seem to be a file.".format(f),
                 ctx=click.get_current_context())
         name = os.path.basename(f.name).lower()
+        name = os.path.splitext(name)[0]
         type_ = os.path.splitext(f.name)[-1].lower().lstrip('.')
         if type_ not in SUPPORTED_FORMATS + SUPPORTED_FORMATS_EXCEL:
             formats = ', '.join(SUPPORTED_FORMATS + SUPPORTED_FORMATS_EXCEL)

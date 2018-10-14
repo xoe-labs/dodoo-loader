@@ -22,7 +22,7 @@
 
 import os
 
-# import click
+from click_odoo import OdooEnvironment
 from click.testing import CliRunner
 # import mock
 
@@ -84,78 +84,60 @@ def test_bad_parameter(odoodb, odoocfg):
     assert "Model argument is no valid odoo model." in result.output
 
 
-# def test_read_files(odoodb, odoocfg):
-#     """ Test if XLSX, XLS, CSV & JSON files load into DataSetGraph """
+def test_read_basic_files(odoodb, odoocfg):
+    """ Test if XLSX, XLS, CSV & JSON files load into DataSetGraph """
 
-#     # With two --src, ther must be two --model, not one.
-#     result = CliRunner().invoke(main, [
-#         '-d', odoodb,
-#         '-c', str(odoocfg),
-#         '--file', DATADIR + "noname1",
-#         '--stream', DATADIR + "noname2",
-#     ])
-#     assert "If we cannot infer a model from filename, " in result.output
 
-#     # Cannot specify --model with xls
-#     result = CliRunner().invoke(main, [
-#         '-d', odoodb,
-#         '-c', str(odoocfg),
-#         '--src', DATADIR + "res_partner.xls",
-#         '--type', "xls",
-#         '--model', 'res.partner',
-#     ])
-#     assert "You cannot specify --model for 'xls' imports." in result.output
+    # Test xlsx
+    result = CliRunner().invoke(main, [
+        '-d', odoodb,
+        '-c', str(odoocfg),
+        '--file', DATADIR + "res_partner.xlsx",
+    ])
+    assert result.exit_code == 0
 
-#     # Serious loading
+    # Test xls
+    result = CliRunner().invoke(main, [
+        '-d', odoodb,
+        '-c', str(odoocfg),
+        '--file', DATADIR + "res_partner.xls",
+    ])
+    assert result.exit_code == 0
 
-#     # Test xlsx
-#     result = CliRunner().invoke(main, [
-#         '-d', odoodb,
-#         '-c', str(odoocfg),
-#         '--src', DATADIR + "res_partner.xlsx",
-#         '--type', "xls",
-#     ])
-#     assert '' in result.output
-#     assert result.exit_code == 0
+    # Test csv
+    result = CliRunner().invoke(main, [
+        '-d', odoodb,
+        '-c', str(odoocfg),
+        '--file', DATADIR + "res.partner.csv",
+    ])
+    assert result.exit_code == 0
 
-#     # Test xls
-#     result = CliRunner().invoke(main, [
-#         '-d', odoodb,
-#         '-c', str(odoocfg),
-#         '--src', DATADIR + "res_partner.xls",
-#         '--type', "xls",
-#     ])
-#     assert result.exit_code == 0
+    # Test json
+    result = CliRunner().invoke(main, [
+        '-d', odoodb,
+        '-c', str(odoocfg),
+        '--file', DATADIR + "res.partner.json",
+    ])
+    assert result.exit_code == 0
 
-#     # Test csv
-#     result = CliRunner().invoke(main, [
-#         '-d', odoodb,
-#         '-c', str(odoocfg),
-#         '--src', DATADIR + "res.partner.csv",
-#         # default: '--type', "csv",
-#     ])
-#     assert result.exit_code == 0
+    with OdooEnvironment(database=odoodb) as env:
+        assert env.ref('__import__.res_partner_5')  # XLSX
+        assert env.ref('__import__.res_partner_10')  # XLS
+        assert env.ref('__import__.res_partner_18')  # CSV
+        assert env.ref('__import__.res_partner_24')  #JSON
 
-#     # Test json
-#     result = CliRunner().invoke(main, [
-#         '-d', odoodb,
-#         '-c', str(odoocfg),
-#         '--src', DATADIR + "res.partner.json",
-#         '--type', "json",
-#     ])
-#     assert result.exit_code == 0
 
-#     # Test 2 csv
-#     result = CliRunner().invoke(main, [
-#         '-d', odoodb,
-#         '-c', str(odoocfg),
-#         '--src', DATADIR + "noname1",
-#         '--src', DATADIR + "noname2",
-#         # default: '--type', "csv",
-#         '--model', 'res.partner',
-#         '--model', 'res.partner',
-#     ])
-#     assert result.exit_code == 0
+    # # Test 2 csv
+    # result = CliRunner().invoke(main, [
+    #     '-d', odoodb,
+    #     '-c', str(odoocfg),
+    #     '--file', DATADIR + "noname1",
+    #     '--src', DATADIR + "noname2",
+    #     # default: '--type', "csv",
+    #     '--model', 'res.partner',
+    #     '--model', 'res.partner',
+    # ])
+    # assert result.exit_code == 0
 
 
 # def test_file_dependency(odoodb, odoocfg):
