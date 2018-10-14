@@ -39,6 +39,10 @@ import click_odoo
 _logger = logging.getLogger(__name__)
 
 
+SUPPORTED_FORMATS = ['csv', 'json']
+SUPPORTED_FORMATS_EXCEL = ['xlsx', 'xls']
+
+
 def load(env, model, chunk):
     """ Loads a chunk into model.
     Public method. Can be scheduled into threads. Interface method. """
@@ -212,13 +216,19 @@ def _read_excel(excelfile, sheetname):
 
 @click.command()
 @click_odoo.env_options(default_log_level='warn', with_rollback=False)
-@click.option('--src', '-s', type=click.File('rb', lazy=True),
-              multiple=True, required=True,
-              help="Path to the file, that you want to load. "
+@click.option('--file', '-f', type=click.File('rb', lazy=True),
+              multiple=True, required=False,
+              help="Path to the file, that you want to load.\n"
                    "You can specify this option multiple times "
                    "for more than one file to load.")
-@click.option('--type', '-t', type=click.Choice(['json', 'csv', 'xls']),
-              show_default=True, default='csv', help="Input date type.")
+@click.option('--stream', '-s', nargs=3,
+              multiple=True, required=False,
+              help="Stream, that you want to load.\n"
+                   "\tFormat: -s stream type model\n"
+                   "\t\t`type` can be csv or json.\n"
+                   "\t\t`model` can be any odoo model availabe in env.\n"
+                   "You can specify this option multiple times "
+                   "for more than one stream to load.")
 @click.option('--onchange/--no-onchange', default=True, show_default=True,
               help="Trigger onchange methods as if data was entered "
                    "through normal form views.")
@@ -232,12 +242,7 @@ def _read_excel(excelfile, sheetname):
               help="Persist the server's output into a JSON database "
                    "alongside each source file. On subsequent runs, "
                    "sucessfull loads are deduplicated.")
-@click.option('--model', '-m', required=False, multiple=True,
-              help="When loading from unnamed streams, you can specify "
-                   "the modles of each stream. They must be presented "
-                   "in the same order as the streams. Note: don't use "
-                   "with xls streams as model is inferred from sheetnames.")
-def main(env, src, type, database, onchange, batch, out, model):
+def main(env, file, stream, onchange, batch, out):
     """ Load data into an Odoo Database.
 
     Loads data supplied in a supported format by file or stream
@@ -250,7 +255,7 @@ def main(env, src, type, database, onchange, batch, out, model):
       and loads everything in the correct order.
 
     - Supported import formats are governed by the excellent pandas library.
-      Most useful: JSON & CSV
+      Most useful: JSON, CSV, XLS & XLSX
 
     - Through `output` persistence flag: can be run idempotently.
 
@@ -265,26 +270,58 @@ def main(env, src, type, database, onchange, batch, out, model):
     # Non-private Class API, therfore pass env as arg
     GRAPH = DataSetGraph(env=env)
 
-    # Validations
-    if type == 'xls' and model:
+    # Check either file or stream input is set.
+    if not file and not stream:
         raise click.BadParameter(
-            "You cannot combine 'xls' with models",
-            ctx=env, param_hint=[type, model])
+            "No stream or file input defined. "
+            "Define either a --file and/or a --stream input.",
+            ctx=click.get_current_context())
 
-    for stream in src:
-        if not hasattr(stream, 'name') and len(src) != len(model):
+    for f in file:
+        if not hasattr(f, 'name'):
             raise click.BadParameter(
-                "If you use at least one unnamed stream, "
-                "you must specify every model of every "
-                "stream in models", ctx=env, param_hint=[src, model])
-    if not model:
-        model = [None] * len(src)
+                "{} doesn't seem to be a file.".format(f),
+                ctx=click.get_current_context())
+        name = os.path.basename(f.name).lower()
+        type_ = os.path.splitext(f.name)[-1].lower().lstrip('.')
+        if type_ not in SUPPORTED_FORMATS + SUPPORTED_FORMATS_EXCEL:
+            formats = ', '.join(SUPPORTED_FORMATS + SUPPORTED_FORMATS_EXCEL)
+            raise click.BadParameter(
+                "Supported formats: {formats}.\n"
+                "Found {type_}".format(formats=formats, type_=type_),
+                ctx=click.get_current_context(), param_hint=f.name)
+        if type_ == 'xlsx':
+            type_ = 'xls'
 
-    for stream, mod in zip(src, model):
-        # Cooperate with `_load_dataframes`
-        if hasattr(stream, 'name'):  # It's a file
-            mod = _infer_valid_model(os.path.basename(stream.name))
-        _load_dataframes(stream, input, mod)
+        excel = type_ == 'xls'
+        model = _infer_valid_model(name)
+
+        if not excel and not model:
+            raise click.BadParameter(
+                "Filename is no valid odoo model. For non-excel files, "
+                "the filename (before the extension) must encode the model.",
+                ctx=click.get_current_context(), param_hint=name)
+        _load_dataframes(f, type_, model)
+
+    for (s, type_, model) in stream:
+        type_, model = type_.lower(), _infer_valid_model(model.lower())
+        if hasattr(s, 'name'):
+            raise click.BadParameter(
+                "{s} doesn't seem to be a stream.".format(locals()),
+                ctx=click.get_current_context())
+        if type_ not in SUPPORTED_FORMATS:
+            formats = ', '.join(SUPPORTED_FORMATS)
+            raise click.BadParameter(
+                "Supported formats for type argument: {formats}.\n"
+                "Found {type_}".format(formats=formats, type_=type_),
+                ctx=click.get_current_context())
+
+        if not model:
+            raise click.BadParameter(
+                "Model argument is no valid odoo model.",
+                ctx=click.get_current_context(), param_hint=model)
+        with open(s, 'rb') as stream:
+            _load_dataframes(stream, type_, model)
 
     GRAPH.load_metadata()
     GRAPH.seed_edges()
