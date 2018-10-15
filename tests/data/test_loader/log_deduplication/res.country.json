@@ -1,0 +1,14 @@
+[
+  {
+    "id": "__import__.res_country_test_1",
+    "name": "Test Country (deduplication) 1"
+  },
+  {
+    "id": "__import__.res_country_tes_2",
+    "name": "Test Country (deduplication) 2"
+  },
+  {
+    "id": "__import__.res_country_test_3",
+    "name": "Test Country (deduplication) 3"
+  }
+]

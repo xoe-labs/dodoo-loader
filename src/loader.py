@@ -66,7 +66,7 @@ def log_load_json(state, ids, extids, msgs, batch, model):
         'model': model,
         'state': state,
         'x_msgs': msgs
-        }, sort_keys=True, indent=4), 'utf-8')
+        }, sort_keys=True, indent=4) + ',', 'utf-8')
 
 
 class DataSetGraph(nx.DiGraph):
@@ -200,17 +200,36 @@ def _infer_valid_model(filename):
     return filename
 
 
-def _load_dataframes(buf, input_type, model):
-    """ Loads dataframes into the GRAPH global receiver """
+def _log_retrieve_loaded_indices(out, model):
+    out.seek(0)
+    data = json.loads(out.read().decode('utf-8'))[:-1]
+    data[:] = (x for x in data if x['model'] == model and x['loaded'])
+    return [c for batch in data for c in batch['candidates']]
 
-    def _load_into_graph(df):
+
+def _load_dataframes(buf, input_type, model, out):
+    """ Loads dataframes into the GRAPH global receiver """
+    # out = None
+
+    def _load_into_graph(df, mod):
         # Drop lines with empty or NaN first column
         df = df[
             df.iloc[:,0] != ''  # Filter out empty strings
         ][
             ~df.iloc[:,0].isnull()  # Filter out none-set values (eg. in json)
         ]
-        df.set_index(df.columns[0], inplace=True)
+        if 'id' in df.columns:
+            idx = 'id'
+        if '.id' in df.columns:
+            idx = '.id'
+        if not idx:
+            raise click.UsageError(
+                "You need to provide an index column:"
+                "\t'id' or '.id' are supported")
+
+        df.set_index(idx, inplace=True)
+        if out and out.read(1):
+            df = df[~df.index.isin(_log_retrieve_loaded_indices(out, mod))]
         GRAPH.add_node(id(df), model=model, df=df)
 
     # Special case: Excel file with sheets
@@ -221,7 +240,7 @@ def _load_dataframes(buf, input_type, model):
             if not model:
                 continue
             df = _read_excel(xlf, name)
-            _load_into_graph(df)
+            _load_into_graph(df, model)
         return
 
     if not model:
@@ -230,7 +249,7 @@ def _load_dataframes(buf, input_type, model):
         df = _read_csv(buf)
     if input_type == 'json':
         df = _read_json(buf)
-    _load_into_graph(df)
+    _load_into_graph(df, model)
 
 
 def _read_csv(filepath_or_buffer):
@@ -274,7 +293,7 @@ def _read_excel(excelfile, sheetname):
                    "after so many records. Nested lines do not count "
                    "towards that value. In *very* complex loading "
                    "scenarios: take some care with nested records.")
-@click.option('--out', type=click.File('wb', lazy=True),
+@click.option('--out', type=click.File('r+b', lazy=True),
               default="./log.json", show_default=True,
               help="Persist the server's output into a JSON database "
                    "alongside each source file. On subsequent runs, "
@@ -344,7 +363,7 @@ def main(env, file, stream, onchange, batch, out):
                 "Filename is no valid odoo model. For non-excel files, "
                 "the filename (before the extension) must encode the model.",
                 ctx=click.get_current_context(), param_hint=name)
-        _load_dataframes(f, type_, model)
+        _load_dataframes(f, type_, model, out)
 
     for (s, type_, model) in stream:
         type_, model = type_.lower(), _infer_valid_model(model.lower())
@@ -364,13 +383,20 @@ def main(env, file, stream, onchange, batch, out):
                 "Model argument is no valid odoo model.",
                 ctx=click.get_current_context(), param_hint=model)
         with open(s, 'rb') as stream:
-            _load_dataframes(stream, type_, model)
+            _load_dataframes(stream, type_, model, out)
 
     GRAPH.load_metadata()
     GRAPH.seed_edges()
     GRAPH.order_to_parent()
     GRAPH.chunk_dataframes(batch)
+
+    out.seek(0)
+    if not out.read(1):
+        out.write(bytes('[', 'utf-8'))  # Hack to produce valid json
+    else:
+        out.seek(-3, 2)
     GRAPH.flush_all(out)  # Sychronous loading
+    out.write(bytes('{}]', 'utf-8'))  # Hack to produce valid json
 
 
 if __name__ == '__main__':  # pragma: no cover

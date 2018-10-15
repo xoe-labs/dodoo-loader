@@ -149,3 +149,54 @@ def test_subfield_fails_gracefully(odoodb, odoocfg):
         '--file', DATADIR + "2many_fail/res.country.json"
     ])
     assert "subfield notation is not supported" in result.output
+
+
+def test_log_deduplication(odoodb, odoocfg):
+    """ Test if log is correctly read to avoid duplicated loading """
+
+    result = CliRunner().invoke(main, [
+        '-d', odoodb,
+        '-c', str(odoocfg),
+        '--file', DATADIR + "log_deduplication/res.country.json",
+    ])
+    assert result.exit_code == 0
+
+    result = CliRunner().invoke(main, [
+        '-d', odoodb,
+        '-c', str(odoocfg),
+        '--file', DATADIR + "log_deduplication/res.country.json"
+    ])
+    assert result.exit_code == 0
+    with open('log.json', 'r') as logs:
+        assert not logs.read().endswith("""
+},{
+    "batch": 0,
+    "candidates": [
+        "__import__.res_country_test_1",
+        "__import__.res_country_tes_2",
+        "__import__.res_country_test_3"
+    ],
+    "loaded": [
+        252,
+        253,
+        254
+    ],
+    "model": "res.country",
+    "state": "success",
+    "x_msgs": []
+},{
+    "batch": 0,
+    "candidates": [
+        "__import__.res_country_test_1",
+        "__import__.res_country_tes_2",
+        "__import__.res_country_test_3"
+    ],
+    "loaded": [
+        252,
+        253,
+        254
+    ],
+    "model": "res.country",
+    "state": "success",
+    "x_msgs": []
+},{}]""")  # Esure second load did not do (and log) anything
