@@ -47,6 +47,7 @@ def test_bad_parameter(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--stream', 'a', 'b',
+        '--out', DATADIR + 'logs.json',
     ])
     assert "--stream option requires 3 arguments" in result.output
 
@@ -55,6 +56,7 @@ def test_bad_parameter(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + 'not_supported.abc',
+        '--out', DATADIR + 'logs.json',
     ])
     assert "Supported formats:" in result.output
 
@@ -62,7 +64,8 @@ def test_bad_parameter(odoodb, odoocfg):
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
-        '--stream', '/dev/stdin', 'xls', 'res.partner'
+        '--stream', '/dev/stdin', 'xls', 'res.partner',
+        '--out', DATADIR + 'logs.json',
     ])
     assert "Supported formats for type argument:" in result.output
 
@@ -70,7 +73,8 @@ def test_bad_parameter(odoodb, odoocfg):
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
-        '--file', DATADIR + 'res.no.partner.csv'
+        '--file', DATADIR + 'res.no.partner.csv',
+        '--out', DATADIR + 'logs.json',
     ])
     assert "Filename is no valid odoo model. For non-excel files, " \
         in result.output
@@ -79,7 +83,8 @@ def test_bad_parameter(odoodb, odoocfg):
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
-        '--stream', 'stream', 'json', 'res.no.partner'
+        '--stream', 'stream', 'json', 'res.no.partner',
+        '--out', DATADIR + 'logs.json',
     ])
     assert "Model argument is no valid odoo model." in result.output
 
@@ -92,6 +97,7 @@ def test_read_basic_files(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + "res_partner.xlsx",
+        '--out', DATADIR + 'logs.json',
     ])
     assert result.exit_code == 0
 
@@ -100,6 +106,7 @@ def test_read_basic_files(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + "res_partner.xls",
+        '--out', DATADIR + 'logs.json',
     ])
     assert result.exit_code == 0
 
@@ -108,6 +115,7 @@ def test_read_basic_files(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + "res.partner.json",
+        '--out', DATADIR + 'logs.json',
     ])
     assert result.exit_code == 0
 
@@ -125,6 +133,7 @@ def test_file_dependency(odoodb, odoocfg):
         '-c', str(odoocfg),
         '--file', DATADIR + "res.country.state.json",  # Should load second
         '--file', DATADIR + "res.country.json",  # Should load first
+        '--out', DATADIR + 'logs.json',
     ])
     assert result.exit_code == 0
 
@@ -133,6 +142,7 @@ def test_file_dependency(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + "res.partner.csv",  # Records are in wrong order
+        '--out', DATADIR + 'logs.json',
     ])
     assert result.exit_code == 0
     with OdooEnvironment(database=odoodb) as env:
@@ -146,7 +156,8 @@ def test_subfield_fails_gracefully(odoodb, odoocfg):
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
-        '--file', DATADIR + "2many_fail/res.country.json"
+        '--file', DATADIR + "2many_fail/res.country.json",
+        '--out', DATADIR + 'logs.json',
     ])
     assert "subfield notation is not supported" in result.output
 
@@ -158,6 +169,7 @@ def test_log_deduplication(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + "log_deduplication/res.country.json",
+        '--out', DATADIR + 'logs.json',
     ])
     assert result.exit_code == 0
 
@@ -165,6 +177,7 @@ def test_log_deduplication(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + "log_deduplication/res.country.json"
+        '--out', DATADIR + 'logs.json',
     ])
     assert result.exit_code == 0
     with open('log.json', 'r') as logs:
