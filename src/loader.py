@@ -85,8 +85,16 @@ class DataSetGraph(nx.DiGraph):
             data['cols'] = []
             for col in data['df'].columns:
                 fixed = odoo.models.fix_import_export_id_paths(col)
-                data['cols'].append({'name': fixed[0],
-                    'subfield': fixed[1] if len(fixed) == 2 else ''})
+                subfield = fixed[1] if len(fixed) == 2 else ''
+                data['cols'].append({
+                    'name': fixed[0],
+                    'subfield': subfield})
+
+                if subfield and not subfield in ['id', '.id']:
+                    raise click.UsageError(
+                        "*2many subfield notation is not supported by this "
+                        "loader:\nThe semantics of this notation can be "
+                        "indeterministic.", ctx=click.get_current_context())
 
             klass = self.env[data['model']]
 
@@ -211,10 +219,9 @@ def _load_dataframes(buf, input_type, model):
         return
     if input_type == 'csv':
         df = _read_csv(buf)
-        df.set_index(df.columns[0], inplace=True)
     if input_type == 'json':
         df = _read_json(buf)
-        df.set_index(df.columns[0], inplace=True)
+    df.set_index(df.columns[0], inplace=True)
     GRAPH.add_node(id(df), model=model, df=df)
 
 

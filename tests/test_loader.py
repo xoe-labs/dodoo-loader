@@ -138,3 +138,14 @@ def test_file_dependency(odoodb, odoocfg):
     with OdooEnvironment(database=odoodb) as env:
         assert env.ref('__import__.res_country_state_1')  # Dependencies
         assert env.ref('__import__.res_partner_18')  # CSV with parent field
+
+
+def test_subfield_fails_gracefully(odoodb, odoocfg):
+    """ Test unsupported subfield and nested notation give correct errors """
+
+    result = CliRunner().invoke(main, [
+        '-d', odoodb,
+        '-c', str(odoocfg),
+        '--file', DATADIR + "2many_fail/res.country.json"
+    ])
+    assert "subfield notation is not supported" in result.output
