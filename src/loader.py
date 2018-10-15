@@ -90,7 +90,7 @@ class DataSetGraph(nx.DiGraph):
                     'name': fixed[0],
                     'subfield': subfield})
 
-                if subfield and not subfield in ['id', '.id']:
+                if subfield and subfield not in ['id', '.id']:
                     raise click.UsageError(
                         "*2many subfield notation is not supported by this "
                         "loader:\nThe semantics of this notation can be "
@@ -131,7 +131,7 @@ class DataSetGraph(nx.DiGraph):
         TODO: Does not work with nested rows. Flatten everything first? """
         for node, data in self.nodes(data=True):
             parent_col = [col for col in data['cols']
-                if col['name'] == data['parent']]
+                          if col['name'] == data['parent']]
             if not parent_col:
                 continue
             parent_col = parent_col[0]
@@ -186,7 +186,8 @@ class DataSetGraph(nx.DiGraph):
                     self.env, self.nodes[node]['model'], df)
                 if log_stream:
                     log_stream.write(
-                        log_load_json(state, ids, df.index.tolist(), msgs, batch,
+                        log_load_json(
+                            state, ids, df.index.tolist(), msgs, batch,
                             self.nodes[node]['model']))
 
 
@@ -214,9 +215,9 @@ def _load_dataframes(buf, input_type, model, out):
     def _load_into_graph(df, mod):
         # Drop lines with empty or NaN first column
         df = df[
-            df.iloc[:,0] != ''  # Filter out empty strings
+            df.iloc[:, 0] != ''  # Filter out empty strings
         ][
-            ~df.iloc[:,0].isnull()  # Filter out none-set values (eg. in json)
+            ~df.iloc[:, 0].isnull()  # Filter out none-set values (eg. in json)
         ]
         if 'id' in df.columns:
             idx = 'id'
