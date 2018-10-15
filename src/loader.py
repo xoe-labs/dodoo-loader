@@ -203,6 +203,16 @@ def _infer_valid_model(filename):
 def _load_dataframes(buf, input_type, model):
     """ Loads dataframes into the GRAPH global receiver """
 
+    def _load_into_graph(df):
+        # Drop lines with empty or NaN first column
+        df = df[
+            df.iloc[:,0] != ''  # Filter out empty strings
+        ][
+            ~df.iloc[:,0].isnull()  # Filter out none-set values (eg. in json)
+        ]
+        df.set_index(df.columns[0], inplace=True)
+        GRAPH.add_node(id(df), model=model, df=df)
+
     # Special case: Excel file with sheets
     if input_type == 'xls':
         xlf = pd.ExcelFile(buf)
@@ -211,8 +221,7 @@ def _load_dataframes(buf, input_type, model):
             if not model:
                 continue
             df = _read_excel(xlf, name)
-            df.set_index(df.columns[0], inplace=True)
-            GRAPH.add_node(id(df), model=model, df=df)
+            _load_into_graph(df)
         return
 
     if not model:
@@ -221,8 +230,7 @@ def _load_dataframes(buf, input_type, model):
         df = _read_csv(buf)
     if input_type == 'json':
         df = _read_json(buf)
-    df.set_index(df.columns[0], inplace=True)
-    GRAPH.add_node(id(df), model=model, df=df)
+    _load_into_graph(df)
 
 
 def _read_csv(filepath_or_buffer):

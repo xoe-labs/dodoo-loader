@@ -3,5 +3,14 @@
     "id": "__import__.res_country_test",
     "name": "Test Country",
     "state_ids/name": "State Name - subfield notation"
+  },
+  {
+    "id": "",
+    "name": "Test Country",
+    "state_ids/name": "State Name - subfield notation"
+  },
+  {
+    "name": "Test Country",
+    "state_ids/name": "State Name - subfield notation"
   }
 ]
