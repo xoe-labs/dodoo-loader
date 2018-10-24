@@ -1,5 +1,17 @@
 # Within your virtualenviornment
 # pip freeze >> requirements.txt
+#
+# !!! Don't forget declare the minimum !!!
+# !!! requirements also in setup.py    !!!
+#
+
+# Basic deps (without odoo itself)
+click-odoo>=1.0.0
+mock
+pytest
+configparser
+
+# Additional, project deps
 Click==7.0
 click-odoo==1.0.4
 decorator==4.3.0

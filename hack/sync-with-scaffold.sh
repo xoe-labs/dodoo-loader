@@ -12,9 +12,6 @@ if ! eval "git merge --no-commit --no-ff scaffold/master" ; then
 fi
 
 # Protect files from beeing merged from scaffold
-git reset -- .no-travis.yml
-git reset -- .travis.yml
-git checkout -- .travis.yml
 git reset -- README.md
 git checkout -- README.rst
 git checkout -- setup.cfg

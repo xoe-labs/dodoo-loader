@@ -4,8 +4,8 @@ click-odoo-loader
 .. image:: https://img.shields.io/badge/license-LGPL--3-blue.svg
    :target: http://www.gnu.org/licenses/lgpl-3.0-standalone.html
    :alt: License: LGPL-3
-.. image:: https://badge.fury.io/py/click-odoo-.svg
-    :target: http://badge.fury.io/py/click-odoo-
+.. image:: https://badge.fury.io/py/click-odoo-loader.svg
+    :target: http://badge.fury.io/py/click-odoo-loader
 
 ``click-odoo-loader`` is a set of useful Odoo maintenance functions.
 They are available as CLI scripts (based on click-odoo_), as well
@@ -13,8 +13,8 @@ as composable python functions.
 
 .. contents::
 
-Script [EXAMPLE - Put output of `--help` here]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Script
+~~~~~~
 .. code:: bash
 
     Usage: loader.py [OPTIONS]
@@ -77,9 +77,9 @@ Script [EXAMPLE - Put output of `--help` here]
 Useful links
 ~~~~~~~~~~~~
 
-- pypi page: https://pypi.org/project/click-odoo-
-- code repository: https://github.com//click-odoo-
-- report issues at: https://github.com//click-odoo-/issues
+- pypi page: https://pypi.org/project/click-odoo-loader
+- code repository: https://github.com//click-odoo-loader
+- report issues at: https://github.com//click-odoo-loader/issues
 
 .. _click-odoo: https://pypi.python.org/pypi/click-odoo
 
