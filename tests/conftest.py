@@ -15,6 +15,9 @@ from click_odoo import odoo, odoo_bin
 odoo.netsvc._logger_init = True
 
 
+HERE = os.path.dirname(__file__)
+
+
 def _init_odoo_db(dbname, test_addons_dir=None):
     subprocess.check_call([
         'createdb', dbname,
@@ -52,6 +55,13 @@ def odoodb(request):
         yield dbname
     finally:
         _drop_db(dbname)
+
+
+@pytest.fixture(scope='module')
+def jsonlog(tmpdir_factory):
+    logfile = tmpdir_factory.mktemp('logs').join('logs.json')
+    logfile.ensure()
+    yield logfile
 
 
 @pytest.fixture(scope='function')

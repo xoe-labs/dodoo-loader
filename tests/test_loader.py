@@ -32,13 +32,14 @@ HERE = os.path.dirname(__file__)
 DATADIR = os.path.join(HERE, 'data/test_loader/')
 
 
-def test_bad_parameter(odoodb, odoocfg):
+def test_bad_parameter(odoodb, jsonlog, odoocfg):
     """ Test if XLSX, XLS, CSV & JSON files load into DataSetGraph """
 
     # Neither --stream nor --file defined.
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
+        '--out', str(jsonlog),
     ])
     assert "No stream or file input defined. " in result.output
 
@@ -46,8 +47,8 @@ def test_bad_parameter(odoodb, odoocfg):
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
-        '--stream', 'a', 'b',
-        '--out', DATADIR + 'logs.json',
+        '--out', str(jsonlog),
+        '--stream', 'a b',
     ])
     assert "--stream option requires 3 arguments" in result.output
 
@@ -56,7 +57,7 @@ def test_bad_parameter(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + 'not_supported.abc',
-        '--out', DATADIR + 'logs.json',
+        '--out', str(jsonlog),
     ])
     assert "Supported formats:" in result.output
 
@@ -65,7 +66,7 @@ def test_bad_parameter(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--stream', '/dev/stdin', 'xls', 'res.partner',
-        '--out', DATADIR + 'logs.json',
+        '--out', str(jsonlog),
     ])
     assert "Supported formats for type argument:" in result.output
 
@@ -74,7 +75,7 @@ def test_bad_parameter(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + 'res.no.partner.csv',
-        '--out', DATADIR + 'logs.json',
+        '--out', str(jsonlog),
     ])
     assert "Filename is no valid odoo model. For non-excel files, " \
         in result.output
@@ -84,12 +85,12 @@ def test_bad_parameter(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--stream', 'stream', 'json', 'res.no.partner',
-        '--out', DATADIR + 'logs.json',
+        '--out', str(jsonlog),
     ])
     assert "Model argument is no valid odoo model." in result.output
 
 
-def test_read_basic_files(odoodb, odoocfg):
+def test_read_basic_files(odoodb, jsonlog, odoocfg):
     """ Test if XLSX, XLS, CSV & JSON files load into DataSetGraph """
 
     # Test xlsx
@@ -97,7 +98,7 @@ def test_read_basic_files(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + "res_partner.xlsx",
-        '--out', DATADIR + 'logs.json',
+        '--out', str(jsonlog),
     ])
     assert result.exit_code == 0
 
@@ -106,7 +107,7 @@ def test_read_basic_files(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + "res_partner.xls",
-        '--out', DATADIR + 'logs.json',
+        '--out', str(jsonlog),
     ])
     assert result.exit_code == 0
 
@@ -115,7 +116,7 @@ def test_read_basic_files(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + "res.partner.json",
-        '--out', DATADIR + 'logs.json',
+        '--out', str(jsonlog),
     ])
     assert result.exit_code == 0
 
@@ -125,7 +126,7 @@ def test_read_basic_files(odoodb, odoocfg):
         assert env.ref('__import__.res_partner_24')  # JSON
 
 
-def test_file_dependency(odoodb, odoocfg):
+def test_file_dependency(odoodb, jsonlog, odoocfg):
     """ Test dependency either between files or within a file (hierarchy) """
 
     result = CliRunner().invoke(main, [
@@ -133,7 +134,7 @@ def test_file_dependency(odoodb, odoocfg):
         '-c', str(odoocfg),
         '--file', DATADIR + "res.country.state.json",  # Should load second
         '--file', DATADIR + "res.country.json",  # Should load first
-        '--out', DATADIR + 'logs.json',
+        '--out', str(jsonlog),
     ])
     assert result.exit_code == 0
 
@@ -142,7 +143,7 @@ def test_file_dependency(odoodb, odoocfg):
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + "res.partner.csv",  # Records are in wrong order
-        '--out', DATADIR + 'logs.json',
+        '--out', str(jsonlog),
     ])
     assert result.exit_code == 0
     with OdooEnvironment(database=odoodb) as env:
@@ -150,43 +151,43 @@ def test_file_dependency(odoodb, odoocfg):
         assert env.ref('__import__.res_partner_18')  # CSV with parent field
 
 
-def test_subfield_fails_gracefully(odoodb, odoocfg):
+def test_subfield_fails_gracefully(odoodb, jsonlog, odoocfg):
     """ Test unsupported subfield and nested notation give correct errors """
 
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + "2many_fail/res.country.json",
-        '--out', DATADIR + 'logs.json',
+        '--out', str(jsonlog),
     ])
     assert "subfield notation is not supported" in result.output
 
 
-def test_log_deduplication(odoodb, odoocfg):
+def test_log_deduplication_1(odoodb, jsonlog, odoocfg):
     """ Test if log is correctly read to avoid duplicated loading """
 
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
         '--file', DATADIR + "log_deduplication/res.country.json",
-        '--out', DATADIR + 'logs.json',
+        '--out', str(jsonlog),
     ])
     assert result.exit_code == 0
 
     result = CliRunner().invoke(main, [
         '-d', odoodb,
         '-c', str(odoocfg),
-        '--file', DATADIR + "log_deduplication/res.country.json"
-        '--out', DATADIR + 'logs.json',
+        '--file', DATADIR + "log_deduplication/res.country.json",
+        '--out', str(jsonlog),
     ])
     assert result.exit_code == 0
-    with open('log.json', 'r') as logs:
+    with open(str(jsonlog), 'r') as logs:
         assert not logs.read().endswith("""
 },{
     "batch": 0,
     "candidates": [
         "__import__.res_country_test_1",
-        "__import__.res_country_tes_2",
+        "__import__.res_country_test_2",
         "__import__.res_country_test_3"
     ],
     "loaded": [
@@ -201,7 +202,7 @@ def test_log_deduplication(odoodb, odoocfg):
     "batch": 0,
     "candidates": [
         "__import__.res_country_test_1",
-        "__import__.res_country_tes_2",
+        "__import__.res_country_test_2",
         "__import__.res_country_test_3"
     ],
     "loaded": [

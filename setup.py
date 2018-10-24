@@ -23,6 +23,8 @@ setup(
         'click-odoo>=1.0.0',
         'networkx',
         'pandas',
+        'xlrd',
+        'future'
     ],
     license='LGPLv3+',
     author='XOE Labs',

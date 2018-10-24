@@ -5,6 +5,7 @@
 /tests/data/test_makepot/addon_test_makepot/i18n/*
 
 # Loading logs
+/tests/data/test_loader/logs.json
 log.json
 
 # Byte-compiled / optimized / DLL files

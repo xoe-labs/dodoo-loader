@@ -5,15 +5,7 @@
 # !!! requirements also in setup.py    !!!
 #
 
-# Basic deps (without odoo itself)
-click-odoo>=1.0.0
-mock
-pytest
-configparser
-
 # Additional, project deps
-Click==7.0
-click-odoo==1.0.4
 decorator==4.3.0
 networkx==2.2
 numpy==1.15.2
@@ -22,3 +14,4 @@ python-dateutil==2.7.3
 pytz==2018.5
 six==1.11.0
 xlrd>=0.9.0
+future

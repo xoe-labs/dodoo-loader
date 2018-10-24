@@ -20,19 +20,36 @@
 # along with this library; if not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+# etc., as needed
+
 import logging
 
 import gc
 import os
 import json
-import pandas as pd
-import numpy as np
-import networkx as nx
 
 import click
 import click_odoo
 
+import pandas as pd
+import numpy as np
+import networkx as nx
+
+
 from click_odoo import odoo
+
+from builtins import open
+from builtins import str
+from builtins import bytes
+
+from future import standard_library
+standard_library.install_aliases()
+
 
 # from utils import manifest, gitutils
 
@@ -181,7 +198,7 @@ class DataSetGraph(nx.DiGraph):
             for batch, df in self.nodes[node]['chunked_iterable']:
                 _logger.info("Synchronously loading %s (%s), batch %s/%s.",
                              self.nodes[node]['repr'],
-                             self.nodes[node]['model'], batch, batchlen)
+                             self.nodes[node]['model'], batch + 1, batchlen)
                 state, ids, msgs = load(
                     self.env, self.nodes[node]['model'], df)
                 if log_stream:
@@ -196,9 +213,12 @@ def _infer_valid_model(filename):
     Filenames are expected to convey the model just as Odoo
     does when loading csv files. """
 
-    if filename not in ENV:
+    # if filename not in ENV:  # does raise in old odoo versions
+    try:
+        ENV[filename]  # noqa
+        return filename
+    except KeyError:
         return False
-    return filename
 
 
 def _log_retrieve_loaded_indices(out, model):
