@@ -6,6 +6,10 @@ Future (?)
 - Flatten out nested data
 - More tests
 
+0.0.3 (2018-10-25)
+--------------------
+- Green tests from 8.0 to master
+
 0.0.2 (2018-10-12)
 --------------------
 - Initial alpha
