@@ -1,4 +1,4 @@
-# Within your virtualenviornment
+# Within your virtualenvironment
 # pip freeze >> requirements.txt
 #
 # !!! Don't forget declare the minimum !!!
