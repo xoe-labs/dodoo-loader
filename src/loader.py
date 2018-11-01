@@ -34,7 +34,8 @@ import numpy as np
 import pandas as pd
 from builtins import bytes, open, str
 from click_odoo import odoo
-from future import standard_library, viewitems
+from future import standard_library
+from future.utils import viewitems
 
 # etc., as needed
 
