@@ -16,61 +16,61 @@ Script
 ~~~~~~
 .. code:: bash
 
-    Usage: loader.py [OPTIONS]
+  Usage: dodoo-loader [OPTIONS]
 
-      Loads data into an Odoo Database.
+    Loads data into an Odoo Database.
 
-      Supply data by file or stream in a supported format and load it into a
-      local or remote Odoo database.
+    Supply data by file or stream in a supported format and load it into a
+    local or remote Odoo database.
 
-      Highlights:
+    Highlights:
 
-      • Detects model-level dependency on related fields and record-level
-      dependencies in tree-like tables (hierarchies). Cares to load everything
-      in the correct order*.
+    • Detects model-level dependency on related fields and record-level
+    dependencies in tree-like tables (hierarchies). Cares to load everything
+    in the correct order*.
 
-      • Supported formats: JSON, CSV, XLS & XLSX
+    • Supported formats: JSON, CSV, XLS & XLSX
 
-      • Logs success to --out. Next runs deduplicate based on those logs.
+    • Logs success to --out. Next runs deduplicate based on those logs.
 
-      • [TBD] Can trigger onchange as if data was entered through forms.
+    • [TBD] Can trigger onchange as if data was entered through forms.
 
-      Note: record-level dependency detection only works with parent columns
-      ending in /.id (db ID) or /id (ext ID). Either one must match the
-      principal id or .id column (to which it refers).
+    Note: record-level dependency detection only works with parent columns
+    ending in /.id (db ID) or /id (ext ID). Either one must match the
+    principal id or .id column (to which it refers).
 
-      Note: For UX and security reasons, nested semantics (as in Odoo) are not
-      supported as they usually are undeterministic (lack of identifier on the
-      nested levels). That's too dangerous for ETL.
+    Note: For UX and security reasons, nested semantics (as in Odoo) are not
+    supported as they usually are undeterministic (lack of identifier on the
+    nested levels). That's too dangerous for ETL.
 
-    Options:
-      -c, --config FILE           Specify the Odoo configuration file. Other ways
-                                  to provide it are with the ODOO_RC or
-                                  OPENERP_SERVER environment variables, or
-                                  ~/.odoorc (Odoo >= 10) or ~/.openerp_serverrc.
-      -d, --database TEXT         Specify the database name. If present, this
-                                  parameter takes precedence over the database
-                                  provided in the Odoo configuration file.
-      --log-level TEXT            Specify the logging level. Accepted values
-                                  depend on the Odoo version, and include debug,
-                                  info, warn, error.  [default: warn]
-      --logfile FILE              Specify the log file.
-      -f, --file FILENAME         Path to the file, that you want to load. You can
-                                  specify this option multiple times for more than
-                                  one file to load.
-      -s, --stream TEXT...        [stream type model] Stream, you want to load.
-                                  `type` can be csv or json. `model` can be any
-                                  odoo model availabe in env. You can specify this
-                                  option multiple times for more than one stream
-                                  to load.
-      --onchange / --no-onchange  [TBD] Trigger onchange methods as if data was
-                                  entered through normal form views.  [default:
-                                  True]
-      --batch INTEGER             The batch size. Records are cut-off for
-                                  iteration after so many records.  [default: 50]
-      --out FILENAME              Log success into a json file.  [default:
-                                  ./log.json]
-      --help                      Show this message and exit.
+  Options:
+    -f, --file FILENAME         Path to the file, that you want to load. You can
+                                specify this option multiple times for more than
+                                one file to load.
+    -s, --stream TEXT...        [stream type model] Stream, you want to load.
+                                `type` can be csv or json. `model` can be any
+                                odoo model availabe in env. You can specify this
+                                option multiple times for more than one stream
+                                to load.
+    --onchange / --no-onchange  [TBD] Trigger onchange methods as if data was
+                                entered through normal form views.  [default:
+                                True]
+    --batch INTEGER             The batch size. Records are cut-off for
+                                iteration after so many records.  [default: 50]
+    --out FILENAME              Log success into a json file.  [default:
+                                ./log.json]
+    --logfile FILE              Specify the log file.
+    -d, --database TEXT         Specify the database name. If present, this
+                                parameter takes precedence over the database
+                                provided in the Odoo configuration file.
+    --log-level TEXT            Specify the logging level. Accepted values
+                                depend on the Odoo version, and include debug,
+                                info, warn, error.  [default: info]
+    -c, --config FILE           Specify the Odoo configuration file. Other ways
+                                to provide it are with the ODOO_RC or
+                                OPENERP_SERVER environment variables, or
+                                ~/.odoorc (Odoo >= 10) or ~/.openerp_serverrc.
+    --help                      Show this message and exit.
 
 
 Useful links
