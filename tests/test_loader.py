@@ -119,7 +119,7 @@ def test_bad_parameter(odoodb, jsonlog, odoocfg):
     assert "Model argument is no valid odoo model." in result.output
 
 
-def test_read_basic_files(odoodb, jsonlog, odoocfg):
+def test_read_basic_files(odoodb, jsonlog, odoocfg, mocker):
     """ Test if XLSX, XLS, CSV & JSON files load into DataSetGraph """
 
     # Test xlsx
@@ -169,14 +169,15 @@ def test_read_basic_files(odoodb, jsonlog, odoocfg):
         ],
     )
     assert result.exit_code == 0
-
-    with OdooEnvironment(database=odoodb) as env:
+    self = mocker.patch("click_odoo.CommandWithOdooEnv")
+    self.database = odoodb
+    with OdooEnvironment(self) as env:
         assert env.ref("__import__.res_partner_5")  # XLSX
         assert env.ref("__import__.res_partner_10")  # XLS
         assert env.ref("__import__.res_partner_24")  # JSON
 
 
-def test_file_dependency(odoodb, jsonlog, odoocfg):
+def test_file_dependency(odoodb, jsonlog, odoocfg, mocker):
     """ Test dependency either between files or within a file (hierarchy) """
 
     result = CliRunner().invoke(
@@ -211,7 +212,9 @@ def test_file_dependency(odoodb, jsonlog, odoocfg):
         ],
     )
     assert result.exit_code == 0
-    with OdooEnvironment(database=odoodb) as env:
+    self = mocker.patch("click_odoo.CommandWithOdooEnv")
+    self.database = odoodb
+    with OdooEnvironment(self) as env:
         assert env.ref("__import__.res_country_state_1")  # Dependencies
         assert env.ref("__import__.res_partner_18")  # CSV with parent field
 

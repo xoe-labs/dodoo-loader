@@ -299,8 +299,11 @@ def _read_excel(excelfile, sheetname):
     return pd.read_excel(excelfile, sheetname)
 
 
-@click.command()
-@click_odoo.env_options(default_log_level="warn", with_rollback=False)
+@click.command(
+    cls=click_odoo.CommandWithOdooEnv,
+    env_options={"with_rollback": False},
+    default_overrides={"log_level": "warn"},
+)
 @click.option(
     "--file",
     "-f",
