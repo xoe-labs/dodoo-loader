@@ -32,9 +32,9 @@ import click_odoo
 import networkx as nx
 import numpy as np
 import pandas as pd
-from builtins import bytes, open, str
 from click_odoo import odoo
 from future import standard_library
+from future.types import bytes, open, str
 from future.utils import viewitems
 
 # etc., as needed
