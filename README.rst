@@ -77,8 +77,8 @@ Useful links
 ~~~~~~~~~~~~
 
 - pypi page: https://pypi.org/project/dodoo-loader
-- code repository: https://github.com//dodoo-loader
-- report issues at: https://github.com//dodoo-loader/issues
+- code repository: https://github.com/xoe-labs/dodoo-loader
+- report issues at: https://github.com/xoe-labs/dodoo-loader/issues
 
 .. _click-odoo: https://pypi.python.org/pypi/click-odoo
 
