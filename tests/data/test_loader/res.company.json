@@ -1,0 +1,7 @@
+[
+  {
+    "id": "__import__.res_company_test",
+    "name": "Test Company",
+    "state_id/id": "__import__.res_country_state_1"
+  }
+]

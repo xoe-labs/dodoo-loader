@@ -27,6 +27,7 @@ import json
 import logging
 import os
 from builtins import bytes, open, str
+from collections import OrderedDict
 
 import click
 import click_odoo
@@ -66,6 +67,23 @@ def load(env, model, chunk):
     return "success", res["ids"], res["messages"]
 
 
+def _onchange(env, model, chunk, field_onchange):
+    model = env[model]
+
+    # Note: field_onchange is still ordered
+    def _apply_onchange(row):
+        values = {}
+        for cell, field in zip(row, field_onchange):
+            values[field[0]] = cell
+        result = model.onchange(values, None, field_onchange)["value"]
+        nrow = []
+        for (k, _) in field_onchange:
+            nrow.append(result[k])
+        return nrow
+
+    return chunk.apply(lambda row: _apply_onchange(row), axis=1)
+
+
 def log_load_json(state, ids, extids, msgs, batch, model):
     """ Logs load result into json chunk. Interface method. """
     return bytes(
@@ -98,12 +116,12 @@ class DataSetGraph(nx.DiGraph):
         """ Loads all required metadata from the odoo enviornment
         for all nodes in the graph and normalizes column names"""
         for _node, data in self.nodes(data=True):
-            # Normalize column names
-            data["cols"] = []
+            # Normalize column names, keep order
+            data["cols"] = OrderedDict()
             for col in data["df"].columns:
                 fixed = odoo.models.fix_import_export_id_paths(col)
                 subfield = fixed[1] if len(fixed) == 2 else ""
-                data["cols"].append({"name": fixed[0], "subfield": subfield})
+                data["cols"][col] = {"name": fixed[0], "subfield": subfield}
 
                 if subfield and subfield not in ["id", ".id"]:
                     raise click.UsageError(
@@ -129,7 +147,11 @@ class DataSetGraph(nx.DiGraph):
                     )
 
             # Enrich cols with data from odoo env (convenience)
-            for col in data["cols"]:
+            _colnames = [col["name"] for col in data["cols"].values()]
+            for col in data["cols"].values():
+                col["onchange"] = (
+                    "1" if klass._has_onchange(col["name"], _colnames) else ""
+                )
                 for rel in data["fields"]["relational"]:
                     if col["name"] == rel["name"]:
                         col["model"] = rel["model"]
@@ -138,17 +160,18 @@ class DataSetGraph(nx.DiGraph):
         """ Seeds the edges based on the df columns relations
         and existing models in the graph """
         for node_u, data in self.nodes(data=True):
-            for col in [col for col in data["cols"] if col.get("model")]:
+            for col in [col for col in data["cols"].values() if col.get("model")]:
                 for node_v, model in self.nodes(data="model"):
                     if col["model"] == model and col["name"] != data["parent"]:
                         self.add_edge(node_u, node_v, column=col["name"])
 
     def order_to_parent(self):
         """ Reorganizes dataframes for parent fields so they are in
-        suitable loading order.
-        TODO: Does not work with nested rows. Flatten everything first? """
+        suitable loading order. Does not support nested rows. """
         for _node, data in self.nodes(data=True):
-            parent_col = [col for col in data["cols"] if col["name"] == data["parent"]]
+            parent_col = [
+                col for col in data["cols"].values() if col["name"] == data["parent"]
+            ]
             if not parent_col:
                 continue
             parent_col = parent_col[0]
@@ -191,12 +214,18 @@ class DataSetGraph(nx.DiGraph):
             # chunks might non-negligable.
             gc.collect()
 
-    def flush_all(self, log_stream=None):
+    def flush_all(self, onchange, log_stream=None):
         """ Synchronously flushes all DataSetGraph's chunks in topo-sorted
         order into their respective model. Writes return state as json into
         the log_buf reciever """
         for node in nx.topological_sort(self.reverse(False)):
             batchlen = len(self.nodes[node]["chunked_iterable"])
+            field_onchange = OrderedDict()
+            # cols are still in their df column order
+            {
+                field_onchange[col["name"]]: col["onchange"]
+                for col in self.nodes[node]["cols"].values()
+            }
             for batch, df in self.nodes[node]["chunked_iterable"]:
                 _logger.info(
                     "Synchronously loading %s (%s), batch %s/%s.",
@@ -205,6 +234,17 @@ class DataSetGraph(nx.DiGraph):
                     batch + 1,
                     batchlen,
                 )
+                if onchange:
+                    _logger.info(
+                        "Applying onchanges on %s (%s), batch %s/%s.",
+                        self.nodes[node]["repr"],
+                        self.nodes[node]["model"],
+                        batch + 1,
+                        batchlen,
+                    )
+                    df = _onchange(
+                        self.env, self.nodes[node]["model"], df, field_onchange
+                    )
                 state, ids, msgs = load(self.env, self.nodes[node]["model"], df)
                 if log_stream:
                     log_stream.write(
@@ -328,17 +368,29 @@ def _read_excel(excelfile, sheetname):
     "for more than one stream to load.",
 )
 @click.option(
+    "--chatter/--no-chatter",
+    default=False,
+    show_default=True,
+    help="Generate a chatter history in models that support chatter. Skipping "
+    "the generation of chatter entries significantly speeds up loading. When "
+    "reloading with changes, you might eventually want to log them, though.",
+)
+@click.option(
     "--onchange/--no-onchange",
     default=True,
     show_default=True,
-    help="[TBD] Trigger onchange methods as if data was entered "
-    "through normal form views.",
+    help="Trigger onchange methods as if data was entered through normal form "
+    "views. Selects onchanges to consider by inspecting the loaded columns. "
+    "You can take advanced controll by loading creafted column chunks in "
+    "sequence in order to trigger or not a specific onchange method at a "
+    "certain point in the overall loading sequence. Slows down the loading. "
+    "Consider switching it off and load fully validated raw data, instead.",
 )
 @click.option(
     "--batch",
     default=50,
     show_default=True,
-    help="The batch size. Records are cut-off for iteration " "after so many records.",
+    help="The batch size. Records are cut-off for iteration after so many records.",
 )
 @click.option(
     "--out",
@@ -347,7 +399,7 @@ def _read_excel(excelfile, sheetname):
     show_default=True,
     help="Log success into a json file.",
 )
-def main(env, file, stream, onchange, batch, out):
+def main(env, file, stream, chatter, onchange, batch, out):
     """ Loads data into an Odoo Database.
 
     Supply data by file or stream in a supported format and load it into a
@@ -373,10 +425,13 @@ def main(env, file, stream, onchange, batch, out):
     supported as they usually are undeterministic (lack of identifier on the
     nested levels). That's too dangerous for ETL.
     """
+    if chatter:
+        env = env.with_context(tracking_disable=chatter)
 
     global ENV  # pylint: disable=W0601
     global GRAPH  # pylint: disable=W0601
     ENV = env
+
     # Non-private Class API, therfore pass env as arg
     GRAPH = DataSetGraph(env=env)
 
@@ -454,7 +509,7 @@ def main(env, file, stream, onchange, batch, out):
         out.write(bytes("[", "utf-8"))  # Hack to produce valid json
     else:
         out.seek(-3, 2)
-    GRAPH.flush_all(out)  # Sychronous loading
+    GRAPH.flush_all(onchange, out)  # Sychronous loading
     out.write(bytes("{}]", "utf-8"))  # Hack to produce valid json
 
 

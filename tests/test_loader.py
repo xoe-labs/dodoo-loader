@@ -132,6 +132,7 @@ def test_read_basic_files(odoodb, jsonlog, odoocfg, mocker):
             str(odoocfg),
             "--file",
             DATADIR + "res_partner.xlsx",
+            "--no-onchange",
             "--out",
             str(jsonlog),
         ],
@@ -148,6 +149,7 @@ def test_read_basic_files(odoodb, jsonlog, odoocfg, mocker):
             str(odoocfg),
             "--file",
             DATADIR + "res_partner.xls",
+            "--no-onchange",
             "--out",
             str(jsonlog),
         ],
@@ -164,6 +166,7 @@ def test_read_basic_files(odoodb, jsonlog, odoocfg, mocker):
             str(odoocfg),
             "--file",
             DATADIR + "res.partner.json",
+            "--no-onchange",
             "--out",
             str(jsonlog),
         ],
@@ -175,6 +178,28 @@ def test_read_basic_files(odoodb, jsonlog, odoocfg, mocker):
         assert env.ref("__import__.res_partner_5")  # XLSX
         assert env.ref("__import__.res_partner_10")  # XLS
         assert env.ref("__import__.res_partner_24")  # JSON
+
+
+def test_onchange_applies(odoodb, jsonlog, odoocfg, mocker):
+    result = CliRunner().invoke(
+        main,
+        [
+            "-d",
+            odoodb,
+            "-c",
+            str(odoocfg),
+            "--file",
+            DATADIR + "res.company.json",
+            "--out",
+            str(jsonlog),
+        ],
+    )
+    assert result.exit_code == 0
+    self = mocker.patch("click_odoo.CommandWithOdooEnv")
+    self.database = odoodb
+    with OdooEnvironment(self) as env:
+        company = env.ref("__import__.res_company_test")
+        assert company.country_id.name == "Test Country"
 
 
 def test_file_dependency(odoodb, jsonlog, odoocfg, mocker):
@@ -191,6 +216,7 @@ def test_file_dependency(odoodb, jsonlog, odoocfg, mocker):
             DATADIR + "res.country.state.json",  # Should load second
             "--file",
             DATADIR + "res.country.json",  # Should load first
+            "--no-onchange",
             "--out",
             str(jsonlog),
         ],
@@ -207,6 +233,7 @@ def test_file_dependency(odoodb, jsonlog, odoocfg, mocker):
             str(odoocfg),
             "--file",
             DATADIR + "res.partner.csv",  # Records are in wrong order
+            "--no-onchange",
             "--out",
             str(jsonlog),
         ],
@@ -250,6 +277,7 @@ def test_log_deduplication_1(odoodb, jsonlog, odoocfg):
             str(odoocfg),
             "--file",
             DATADIR + "log_deduplication/res.country.json",
+            "--no-onchange",
             "--out",
             str(jsonlog),
         ],
@@ -265,6 +293,7 @@ def test_log_deduplication_1(odoodb, jsonlog, odoocfg):
             str(odoocfg),
             "--file",
             DATADIR + "log_deduplication/res.country.json",
+            "--no-onchange",
             "--out",
             str(jsonlog),
         ],
