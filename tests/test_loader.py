@@ -22,10 +22,11 @@
 
 import os
 
+import pytest
 from click.testing import CliRunner
-from click_odoo import OdooEnvironment
+from dodoo import OdooEnvironment, odoo
 
-from src.loader import main
+from src.loader import load
 
 # import mock
 
@@ -39,20 +40,20 @@ def test_bad_parameter(odoodb, jsonlog, odoocfg):
 
     # Neither --stream nor --file defined.
     result = CliRunner().invoke(
-        main, ["-d", odoodb, "-c", str(odoocfg), "--out", str(jsonlog)]
+        load, ["-d", odoodb, "-c", str(odoocfg), "--out", str(jsonlog)]
     )
     assert "No stream or file input defined. " in result.output
 
     # --stream needs 3 arguments
     result = CliRunner().invoke(
-        main,
+        load,
         ["-d", odoodb, "-c", str(odoocfg), "--out", str(jsonlog), "--stream", "a b"],
     )
     assert "--stream option requires 3 arguments" in result.output
 
     # Not supported file format
     result = CliRunner().invoke(
-        main,
+        load,
         [
             "-d",
             odoodb,
@@ -68,7 +69,7 @@ def test_bad_parameter(odoodb, jsonlog, odoocfg):
 
     # Not supported stream type
     result = CliRunner().invoke(
-        main,
+        load,
         [
             "-d",
             odoodb,
@@ -86,7 +87,7 @@ def test_bad_parameter(odoodb, jsonlog, odoocfg):
 
     # No valid odoo model file
     result = CliRunner().invoke(
-        main,
+        load,
         [
             "-d",
             odoodb,
@@ -102,7 +103,7 @@ def test_bad_parameter(odoodb, jsonlog, odoocfg):
 
     # No valid odoo model stream
     result = CliRunner().invoke(
-        main,
+        load,
         [
             "-d",
             odoodb,
@@ -124,7 +125,7 @@ def test_read_basic_files(odoodb, jsonlog, odoocfg, mocker):
 
     # Test xlsx
     result = CliRunner().invoke(
-        main,
+        load,
         [
             "-d",
             odoodb,
@@ -141,7 +142,7 @@ def test_read_basic_files(odoodb, jsonlog, odoocfg, mocker):
 
     # Test xls
     result = CliRunner().invoke(
-        main,
+        load,
         [
             "-d",
             odoodb,
@@ -158,7 +159,7 @@ def test_read_basic_files(odoodb, jsonlog, odoocfg, mocker):
 
     # Test json
     result = CliRunner().invoke(
-        main,
+        load,
         [
             "-d",
             odoodb,
@@ -172,7 +173,7 @@ def test_read_basic_files(odoodb, jsonlog, odoocfg, mocker):
         ],
     )
     assert result.exit_code == 0
-    self = mocker.patch("click_odoo.CommandWithOdooEnv")
+    self = mocker.patch("dodoo.CommandWithOdooEnv")
     self.database = odoodb
     with OdooEnvironment(self) as env:
         assert env.ref("__import__.res_partner_5")  # XLSX
@@ -180,33 +181,11 @@ def test_read_basic_files(odoodb, jsonlog, odoocfg, mocker):
         assert env.ref("__import__.res_partner_24")  # JSON
 
 
-def test_onchange_applies(odoodb, jsonlog, odoocfg, mocker):
-    result = CliRunner().invoke(
-        main,
-        [
-            "-d",
-            odoodb,
-            "-c",
-            str(odoocfg),
-            "--file",
-            DATADIR + "res.company.json",
-            "--out",
-            str(jsonlog),
-        ],
-    )
-    assert result.exit_code == 0
-    self = mocker.patch("click_odoo.CommandWithOdooEnv")
-    self.database = odoodb
-    with OdooEnvironment(self) as env:
-        company = env.ref("__import__.res_company_test")
-        assert company.country_id.name == "Test Country"
-
-
 def test_file_dependency(odoodb, jsonlog, odoocfg, mocker):
     """ Test dependency either between files or within a file (hierarchy) """
 
     result = CliRunner().invoke(
-        main,
+        load,
         [
             "-d",
             odoodb,
@@ -225,7 +204,7 @@ def test_file_dependency(odoodb, jsonlog, odoocfg, mocker):
 
     # Test csv & parent field reorganization
     result = CliRunner().invoke(
-        main,
+        load,
         [
             "-d",
             odoodb,
@@ -239,18 +218,45 @@ def test_file_dependency(odoodb, jsonlog, odoocfg, mocker):
         ],
     )
     assert result.exit_code == 0
-    self = mocker.patch("click_odoo.CommandWithOdooEnv")
+    self = mocker.patch("dodoo.CommandWithOdooEnv")
     self.database = odoodb
     with OdooEnvironment(self) as env:
         assert env.ref("__import__.res_country_state_1")  # Dependencies
         assert env.ref("__import__.res_partner_18")  # CSV with parent field
 
 
+def test_onchange_applies(odoodb, jsonlog, odoocfg, mocker):
+    if odoo.release.version_info[0] < 10:
+        pytest.skip(
+            "version < 10 does not have the onchange function on "
+            "which this test depends."
+        )
+    result = CliRunner().invoke(
+        load,
+        [
+            "-d",
+            odoodb,
+            "-c",
+            str(odoocfg),
+            "--file",
+            DATADIR + "res.company.json",
+            "--out",
+            str(jsonlog),
+        ],
+    )
+    assert result.exit_code == 0
+    self = mocker.patch("dodoo.CommandWithOdooEnv")
+    self.database = odoodb
+    with OdooEnvironment(self) as env:
+        company = env.ref("__import__.res_company_test")
+        assert company.country_id.name == "Test Country"
+
+
 def test_subfield_fails_gracefully(odoodb, jsonlog, odoocfg):
     """ Test unsupported subfield and nested notation give correct errors """
 
     result = CliRunner().invoke(
-        main,
+        load,
         [
             "-d",
             odoodb,
@@ -269,7 +275,7 @@ def test_log_deduplication_1(odoodb, jsonlog, odoocfg):
     """ Test if log is correctly read to avoid duplicated loading """
 
     result = CliRunner().invoke(
-        main,
+        load,
         [
             "-d",
             odoodb,
@@ -285,7 +291,7 @@ def test_log_deduplication_1(odoodb, jsonlog, odoocfg):
     assert result.exit_code == 0
 
     result = CliRunner().invoke(
-        main,
+        load,
         [
             "-d",
             odoodb,

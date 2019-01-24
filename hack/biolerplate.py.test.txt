@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-# This file is part of the click-odoo-{{ PROJECT }} (R) project.
+# This file is part of the dodoo-{{ PROJECT }} (R) project.
 # Copyright (c) 2018 {{ COPYRIGHT }}
 # Authors: {{ AUTHOR }}, et al.
 #
@@ -24,7 +24,7 @@
 
 import click
 from click.testing import CliRunner
-# from click_odoo import odoo
+# from dodoo import odoo
 
 from src.{{ PROJECT }} import main
 

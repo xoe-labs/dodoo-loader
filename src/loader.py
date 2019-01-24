@@ -30,11 +30,11 @@ from builtins import bytes, open, str
 from collections import OrderedDict
 
 import click
-import click_odoo
+import dodoo
 import networkx as nx
 import numpy as np
 import pandas as pd
-from click_odoo import odoo
+from dodoo import odoo
 from future import standard_library
 from future.utils import viewitems
 
@@ -53,7 +53,7 @@ SUPPORTED_FORMATS = ["csv", "json"]
 SUPPORTED_FORMATS_EXCEL = ["xlsx", "xls"]
 
 
-def load(env, model, chunk):
+def odoo_load(env, model, chunk):
     """ Loads a chunk into model.
     Public method. Can be scheduled into threads. Interface method. """
     res = env[model].load(
@@ -67,21 +67,29 @@ def load(env, model, chunk):
     return "success", res["ids"], res["messages"]
 
 
-def _onchange(env, model, chunk, field_onchange):
+def _onchange(env, model, chunk, field_onchange, is_external_id):
     model = env[model]
 
     # Note: field_onchange is still ordered
     def _apply_onchange(row):
-        values = {}
-        for cell, field in zip(row, field_onchange):
-            values[field[0]] = cell
-        result = model.onchange(values, None, field_onchange)["value"]
-        nrow = []
-        for (k, _) in field_onchange:
-            nrow.append(result[k])
-        return nrow
+        for i, (cell, xid) in enumerate(zip(row, is_external_id)):
+            if xid and cell:
+                row[i] = env.ref(cell).id
+            else:
+                row[i] = cell
+        result = model.onchange(row, None, field_onchange)["value"]
+        for i in row.index:
+            if i not in result:
+                continue
+            # It's a m2o in client format
+            elif isinstance(result[i], tuple):
+                row[i] = result[i][0]
+            else:
+                row[i] = result[i]
+        return row
 
-    return chunk.apply(lambda row: _apply_onchange(row), axis=1)
+    res = chunk.apply(_apply_onchange, axis=1, result_type="expand")
+    return res
 
 
 def log_load_json(state, ids, extids, msgs, batch, model):
@@ -150,7 +158,9 @@ class DataSetGraph(nx.DiGraph):
             _colnames = [col["name"] for col in data["cols"].values()]
             for col in data["cols"].values():
                 col["onchange"] = (
-                    "1" if klass._has_onchange(col["name"], _colnames) else ""
+                    "1"
+                    if klass._has_onchange(klass._fields[col["name"]], _colnames)
+                    else ""
                 )
                 for rel in data["fields"]["relational"]:
                     if col["name"] == rel["name"]:
@@ -221,11 +231,13 @@ class DataSetGraph(nx.DiGraph):
         for node in nx.topological_sort(self.reverse(False)):
             batchlen = len(self.nodes[node]["chunked_iterable"])
             field_onchange = OrderedDict()
+            is_external_id = []
+
             # cols are still in their df column order
-            {
-                field_onchange[col["name"]]: col["onchange"]
-                for col in self.nodes[node]["cols"].values()
-            }
+            for col in self.nodes[node]["cols"].values():
+                field_onchange[col["name"]] = col["onchange"]
+                is_external_id.append(col["subfield"] == "id")
+
             for batch, df in self.nodes[node]["chunked_iterable"]:
                 _logger.info(
                     "Synchronously loading %s (%s), batch %s/%s.",
@@ -242,10 +254,24 @@ class DataSetGraph(nx.DiGraph):
                         batch + 1,
                         batchlen,
                     )
+                    # Coerce to database Ids columns
+                    _coreced = [
+                        colname.replace("/id", "/.id") for colname in df.columns
+                    ]
+                    _cleaned = [
+                        colname.replace("/id", "").replace("/.id", "")
+                        for colname in df.columns
+                    ]
+                    df.columns = _cleaned
                     df = _onchange(
-                        self.env, self.nodes[node]["model"], df, field_onchange
+                        self.env,
+                        self.nodes[node]["model"],
+                        df,
+                        field_onchange,
+                        is_external_id,
                     )
-                state, ids, msgs = load(self.env, self.nodes[node]["model"], df)
+                    df.columns = _coreced
+                state, ids, msgs = odoo_load(self.env, self.nodes[node]["model"], df)
                 if log_stream:
                     log_stream.write(
                         log_load_json(
@@ -284,10 +310,6 @@ def _load_dataframes(buf, input_type, model, out):
     # out = None
 
     def _load_into_graph(df, mod):
-        # Drop lines with empty or NaN first column
-        df = df[df.iloc[:, 0] != ""][  # Filter out empty strings
-            ~df.iloc[:, 0].isnull()  # Filter out none-set values (eg. in json)
-        ]
         if "id" in df.columns:
             idx = "id"
         if ".id" in df.columns:
@@ -296,7 +318,10 @@ def _load_dataframes(buf, input_type, model, out):
             raise click.UsageError(
                 "You need to provide an index column:" "\t'id' or '.id' are supported"
             )
-
+        # Drop lines with empty or NaN index column
+        df = df[df[idx] != ""][  # Filter out empty strings
+            ~df[idx].isnull()  # Filter out none-set values (eg. in json)
+        ]
         df.set_index(idx, inplace=True)
         if out and out.read(1):
             df = df[~df.index.isin(_log_retrieve_loaded_indices(out, mod))]
@@ -340,11 +365,9 @@ def _read_excel(excelfile, sheetname):
     return pd.read_excel(excelfile, sheetname)
 
 
-@click.command(
-    cls=click_odoo.CommandWithOdooEnv,
-    env_options={"with_rollback": False, "with_addons_path": True},
-    default_overrides={"log_level": "warn"},
-)
+@click.command(cls=dodoo.CommandWithOdooEnv)
+@dodoo.options.addons_path_opt(True)
+@dodoo.options.db_opt(True)
 @click.option(
     "--file",
     "-f",
@@ -399,7 +422,7 @@ def _read_excel(excelfile, sheetname):
     show_default=True,
     help="Log success into a json file.",
 )
-def main(env, file, stream, chatter, onchange, batch, out):
+def load(env, file, stream, chatter, onchange, batch, out):
     """ Loads data into an Odoo Database.
 
     Supply data by file or stream in a supported format and load it into a
@@ -414,8 +437,6 @@ def main(env, file, stream, chatter, onchange, batch, out):
     • Supported formats: JSON, CSV, XLS & XLSX
 
     • Logs success to --out. Next runs deduplicate based on those logs.
-
-    • [TBD] Can trigger onchange as if data was entered through forms.
 
     Note: record-level dependency detection only works with parent columns
     ending in /.id (db ID) or /id (ext ID). Either one must match the principal
@@ -514,4 +535,4 @@ def main(env, file, stream, chatter, onchange, batch, out):
 
 
 if __name__ == "__main__":  # pragma: no cover
-    main()
+    load()
