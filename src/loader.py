@@ -417,8 +417,7 @@ def _read_excel(excelfile, sheetname):
 )
 @click.option(
     "--out",
-    type=click.File("r+b", lazy=True),
-    default="./log.json",
+    type=click.File("w+b", lazy=True),
     show_default=True,
     help="Log success into a json file.",
 )
