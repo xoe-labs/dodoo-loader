@@ -6,6 +6,12 @@ Future (?)
 - Flatten out nested data
 - More tests
 
+0.6.5 (2019-05-05)
+------------------
+- Simplify repo structure
+- Fix package namespace issues
+- Fix issue with future str type
+
 0.5.2 (2018-12-05)
 ------------------
 - Add addons-path option
