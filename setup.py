@@ -37,6 +37,6 @@ setup(
     ],
     entry_points="""
         [core_package.cli_plugins]
-        load=src.loader:load
+        load=dodoo_loader.cli:load
     """,
 )

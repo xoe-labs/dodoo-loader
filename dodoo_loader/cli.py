@@ -44,8 +44,6 @@ from future.utils import viewitems
 standard_library.install_aliases()
 
 
-# from utils import manifest, gitutils
-
 _logger = logging.getLogger(__name__)
 
 

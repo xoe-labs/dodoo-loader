@@ -26,7 +26,7 @@ import pytest
 from click.testing import CliRunner
 from dodoo import OdooEnvironment, odoo
 
-from src.loader import load
+from dodoo_loader.cli import load
 
 # import mock
 
