@@ -26,7 +26,7 @@ import gc
 import json
 import logging
 import os
-from builtins import bytes, open, str
+from builtins import bytes, open
 from collections import OrderedDict
 
 import click
