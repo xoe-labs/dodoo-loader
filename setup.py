@@ -22,7 +22,7 @@ setup(
     install_requires=[
         "dodoo>=2.0.0.rc6",
         "pyyaml==3.12 ; python_version < '3.7'",
-        "pyyaml==3.13 ; python_version >= '3.7'",
+        "pyyaml==5.1 ; python_version >= '3.7'",
         "networkx",
         "pandas",
         "xlrd",
